@@ -5,13 +5,15 @@ from llm.providers.factory import LLMProvider
 from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedException
 from logs import logger
 
+
+TIMEOUT = 30
 class  OpenAIProvider(LLMProvider):
     def __init__(self, model_name: str, config):
         self.api_key = os.environ.get("OPENAI_API_KEY")
         self.client = OpenAI(api_key=self.api_key) if self.api_key else None
         self.model_name = model_name
         self.config = config
-        self.timeout = 30
+        self.timeout = TIMEOUT
         
     def completion(self, messages: List[Dict[str, str]]) -> str:
         if not self.client:
@@ -40,7 +42,7 @@ class AsyncOpenAIProvider(LLMProvider):
         self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
         self.model_name = model_name
         self.config = config
-        self.timeout = 30
+        self.timeout = TIMEOUT
         
     async def completion(self, messages: List[Dict[str, str]]) -> str:
         if not self.client:

@@ -5,8 +5,10 @@ import os
 
 import google.generativeai as genai
 from llm.providers.factory import LLMProvider
+from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable
 from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedException
 from logs import logger
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from pydantic import BaseModel
 from typing import List
@@ -30,6 +32,11 @@ class GeminiProvider(LLMProvider):
         else:
             self.client = None
     
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=60),
+        retry=retry_if_exception_type((ResourceExhausted, ServiceUnavailable))
+    )
     def completion(self, messages: List[Dict[str, str]]) -> str:
         if not self.client:
             raise LLMAPIKeyMissingError("Google API key not configured")
@@ -79,13 +86,15 @@ class GeminiProvider(LLMProvider):
             
             return response.text
             
+        except (ResourceExhausted, ServiceUnavailable) as e:
+            logger.warning(f"Gemini API transient error: {str(e)}. Retrying...")
+            raise e
         except Exception as e:
             logger.error(f"Gemini API request failed: {str(e)}")
             raise LLMProviderCompletionFailedException(f"Gemini API request failed: {str(e)}")
     
     def is_available(self) -> bool:
         return self.client is not None
-
 
 class AsyncGeminiProvider(LLMProvider):
     def __init__(self, model_name, config):
@@ -99,6 +108,11 @@ class AsyncGeminiProvider(LLMProvider):
         else:
             self.client = None
     
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=60),
+        retry=retry_if_exception_type((ResourceExhausted, ServiceUnavailable))
+    )
     async def completion(self, messages: List[Dict[str, str]]) -> str:
         if not self.client:
             raise LLMAPIKeyMissingError("Google API key not configured")
@@ -146,6 +160,9 @@ class AsyncGeminiProvider(LLMProvider):
             
             return response.text
             
+        except (ResourceExhausted, ServiceUnavailable) as e:
+            logger.warning(f"Gemini API transient error: {str(e)}. Retrying...")
+            raise e
         except Exception as e:
             logger.error(f"Gemini API request failed: {str(e)}")
             raise LLMProviderCompletionFailedException(f"Gemini API request failed: {str(e)}")

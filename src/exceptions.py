@@ -39,3 +39,6 @@ class ComponentGenerationFailedException(Exception):
 
 class ComponentStatusUpdateFailedException(Exception):
     """ComponentStatusUpdateFailedException is raised when updating a component's status fails."""
+
+class SVGInvalidException(Exception):
+    """SVGInvalidException is raised when the generated SVG content is not valid."""

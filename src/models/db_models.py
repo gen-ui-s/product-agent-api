@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
-from api.job_config import JobStatus, ComponentStatus
-from api.job_config import AvailablePlatforms
-# from api.config.user_config import SubscriptionStatus
+from job_config import JobStatus, ComponentStatus, AvailablePlatforms,  GenerationType
 
 @dataclass 
 class User:
@@ -33,13 +31,13 @@ class User:
 @dataclass
 class Job:
     _id: str
-    user_prompt: str #
+    user_prompt: str
     user_id: str
     status: JobStatus
     screen_count: int
     model: str
-    platform: AvailablePlatforms#
-    creativity: float#
+    platform: AvailablePlatforms
+    generation_type: GenerationType
     created_at: str
     completed_at: Optional[str] = None
     error_message: Optional[str] = None
@@ -53,7 +51,7 @@ class Job:
             "screen_count": self.screen_count,
             "model": self.model,
             "platform": self.platform,
-            "creativity": self.creativity,
+            "generation_type": self.generation_type,
             "created_at": self.created_at,
             "completed_at": self.completed_at,
             "error_message": self.error_message

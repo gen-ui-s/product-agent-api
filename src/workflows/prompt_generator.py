@@ -17,8 +17,8 @@ class PromptGenerator:
             
             system_prompt = PROMPT_GENERATOR_SYSTEM_PROMPT.format(
                 screen_count=self.job_data["screen_count"],
-                generation_type="flow",#TODO add generation_type to job and request in API
-                style_guide="Minimalist, pastel colors, serene, modern. Use SHADCN desing system principles."#TODO add design system information here
+                generation_type=self.job_data["generation_type"],
+                style_guide="Minimalist, pastel colors, serene, modern. Use SHADCN desing system principles."#TODO add design system information here.
                 )
             messages = [
                 {"role": "system", "content": system_prompt},

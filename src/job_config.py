@@ -5,6 +5,9 @@ class AvailablePlatforms(Enum):
     WEB = "web"
     MOBILE = "mobile"
 
+class GenerationType(str, Enum):
+    FLOW = "flow"
+    ITERATION = "iteration"
 
 class JobStatus(str, Enum):
     SUBMITTED = "SUBMITTED"

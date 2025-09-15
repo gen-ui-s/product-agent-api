@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from enum import Enum
 
+
 @dataclass
 class TemperatureOptions:
     default: float
     creative: float
+
 
 @dataclass 
 class LLMModelConfig:

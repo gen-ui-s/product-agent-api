@@ -24,7 +24,7 @@ def lambda_handler(event, context):
         
         return ResponseModel(
             status_code=status.HTTP_200_OK,
-            message=f'Processing started for job_id: {job_id}'
+            message=f'Generating components for job_id: {job_id}'
         )
 
     except json.JSONDecodeError as e:
