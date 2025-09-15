@@ -9,7 +9,7 @@ class User:
     given_name: str
     email: str
     credits: int
-    subscription_status: str  # SubscriptionStatus
+    subscription_status: str
     stripe_customer_id: Optional[str] = None
     created_at: Optional[str] = ""
     updated_at: Optional[str] = ""
