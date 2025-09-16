@@ -24,27 +24,20 @@ def main():
     DB_USERNAME = os.environ.get("DB_USERNAME")
     DB_PASSWORD = os.environ.get("DB_PASSWORD")
     
-    # --- Step 2: Define the job ID you want to test ---
-    # This should be an ID that exists in your local Docker MongoDB instance.
-    test_job_id = "1fae8689-174e-4833-88d8-980f2258054e" # Original job ID
 
-    # --- Step 3: Create the mock 'event' object ---
-    # This simulates the payload coming from an API Gateway.
-    # The 'body' must be a JSON *string*, which is why we use json.dumps().
+    test_job_id = "put job id here" # Original job ID
+
     mock_event = {
         "body": json.dumps({
             "job_id": test_job_id
         })
     }
 
-    # The 'context' object is often not needed for simple tests and can be None.
     mock_context = None
 
-    # --- Step 4: Invoke the handler function ---
     print(f"Invoking handler with job_id: {test_job_id}")
     result = lambda_handler(mock_event, mock_context)
 
-    # --- Step 5: Print the result ---
     print("\n--- Handler Response ---")
     print(result)
     print("------------------------")

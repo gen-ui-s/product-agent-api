@@ -62,6 +62,7 @@ Your JSON output should be:
 """
 
 
+
 COMPONENT_GENERATOR_SYSTEM_PROMPT = """
 <role>
 You are an expert UI designer and a vector graphics generation agent. Your purpose is to translate a structured set of UI/UX requirements into a single, valid, and self-contained SVG element that visually represents a user interface screen.

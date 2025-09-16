@@ -15,7 +15,7 @@ class JobStatus(str, Enum):
     COMPLETED = "COMPLETED"
 
 class ComponentStatus(str, Enum):
-    SUBMITTED = "SUBMITTED"
+    PENDING = "PENDING"
     RUNNING = "RUNNING"
     SUCCESSFUL = "SUCCESSFUL"
     FAILED = "FAILED"

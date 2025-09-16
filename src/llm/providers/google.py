@@ -113,17 +113,23 @@ class AsyncGeminiProvider(LLMProvider):
         wait=wait_exponential(multiplier=1, min=2, max=60),
         retry=retry_if_exception_type((ResourceExhausted, ServiceUnavailable))
     )
-    async def completion(self, messages: List[Dict[str, str]]) -> str:
+    async def completion(self, messages: List[Dict[str, str]], force_json: bool = False) -> str:
         if not self.client:
             raise LLMAPIKeyMissingError("Google API key not configured")
-            
+
         try:
-            generation_config = genai.GenerationConfig(
-                temperature=self.config.temperature_options.default,
-                max_output_tokens=self.config.max_tokens,
-                response_mime_type="application/json",
-                response_schema=ScreenGenerationResponse
-            )
+            if force_json:
+                generation_config = genai.GenerationConfig(
+                    temperature=self.config.temperature_options.default,
+                    max_output_tokens=self.config.max_tokens,
+                    response_mime_type="application/json",
+                    response_schema=ScreenGenerationResponse
+                )
+            else:
+                generation_config = genai.GenerationConfig(
+                    temperature=self.config.temperature_options.default,
+                    max_output_tokens=self.config.max_tokens
+                )
 
             safety_settings = [
                 {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},

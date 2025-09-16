@@ -53,13 +53,13 @@ def update_job_status(db: Dict, job_id: str, new_status: JobStatus) -> bool:
         raise JobStatusUpdateFailedException(f"Failed to update job status: {str(e)}")
 
 
-def update_component_status(db: Dict, component_id: str, new_status: ComponentStatus) -> bool:
+def bulk_update_component_status(db: Dict, component_ids: List[str], new_status: ComponentStatus) -> int:
     try:
-        result = db["generated_components"].update_one(
-            {"_id": component_id},
-            {"$set": {"status": new_status.value}}
+        result = db["generated_components"].update_many(
+            {"_id": {"$in": component_ids}},
+            {"$set": {"status": new_status}}
         )
-        return result.modified_count > 0
+        return result.modified_count
     except Exception as e:
         raise ComponentStatusUpdateFailedException(f"Failed to update component status: {str(e)}")
 

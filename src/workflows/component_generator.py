@@ -19,14 +19,12 @@ class AsyncComponentGenerator:
     def _validate_svg(self, svg_content: str) -> bool:
         """Validate if the generated content is a valid SVG"""
         try:
-            # Check if it contains basic SVG structure
             if not svg_content.strip().startswith('<svg'):
                 return False
 
             if not svg_content.strip().endswith('</svg>'):
                 return False
 
-            # Try to parse as XML
             ET.fromstring(svg_content)
             return True
 
@@ -39,7 +37,6 @@ class AsyncComponentGenerator:
 
     async def _make_llm_request(self, messages: List) -> str:
         try:
-            logger.info(f"Making LLM request with model: {self.model_name}")
             provider = LLMFactory.create_async_provider(self.model_name)
             model_response = await provider.completion(
                 messages=messages
@@ -60,7 +57,6 @@ class AsyncComponentGenerator:
 
         generated_code = await self._make_llm_request(messages)
 
-        # Validate SVG before creating component
         if not self._validate_svg(generated_code):
             logger.error(f"Generated SVG is invalid for prompt: {self.user_prompt[:50]}...")
             raise SVGInvalidException(f"Generated SVG is not valid XML or doesn't follow SVG structure")

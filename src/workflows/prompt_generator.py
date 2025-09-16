@@ -1,6 +1,6 @@
 import json
 from models.db_models import Job
-from exceptions import ComponentGenerationFailedException
+from exceptions import PromptGenerationFailedException
 from llm.providers.factory import LLMFactory
 from workflows.config.prompts import PROMPT_GENERATOR_SYSTEM_PROMPT
 from logs import logger
@@ -12,7 +12,6 @@ class PromptGenerator:
     def run(self):            
         try:
             logger.info("Generating screen prompts...")
-            logger.info(self.job_data)
             provider = LLMFactory.create_provider(self.job_data["model"])
             
             system_prompt = PROMPT_GENERATOR_SYSTEM_PROMPT.format(
@@ -26,8 +25,7 @@ class PromptGenerator:
             ]
             
             response = provider.completion(messages=messages)
-            logger.info(response)
         except Exception as e:
-            raise ComponentGenerationFailedException(f"Failed to create generation sub-prompts: {str(e)}")            
+            raise PromptGenerationFailedException(f"Failed to create generation sub-prompts: {str(e)}")            
         
         return json.loads(response)   

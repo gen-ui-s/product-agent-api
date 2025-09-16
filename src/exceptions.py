@@ -28,14 +28,17 @@ class UserFailedUpdateException(Exception):
 class UserFailedInsertionException(Exception):
     """UserFailedInsertionException is raised when inserting a new user fails."""
 
-class PromptGeneratorException(Exception):
-    """PromptGeneratorException is raised for errors during prompt generation."""
+class PromptGenerationFailedException(Exception):
+    """ComponentGenerationException is raised for errors during component generation."""
 
 class ComponentsNotFoundException(Exception):
     """ComponentsNotFoundException is raised when components related to a job are not found in the database."""
 
 class ComponentGenerationFailedException(Exception):
     """ComponentGenerationException is raised for errors during component generation."""
+
+class ComponentGeneratedLengthMismatchException(Exception): 
+    """ComponentGeneratedLengthMismatchException  is raised if componentes generated are not the same length as DB components"""
 
 class ComponentStatusUpdateFailedException(Exception):
     """ComponentStatusUpdateFailedException is raised when updating a component's status fails."""
