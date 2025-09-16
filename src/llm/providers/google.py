@@ -1,17 +1,14 @@
-from typing import List, Dict
-from pydantic import BaseModel
-
 import os
+from typing import List, Dict, Any
 
 import google.generativeai as genai
+from google.generativeai.types import GenerationConfig, SafetySettingDict, HarmCategory
+from google.api_core import exceptions as google_exceptions
+from pydantic import BaseModel
+
 from llm.providers.factory import LLMProvider
-from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable
 from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedException
 from logs import logger
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-
-from pydantic import BaseModel
-from typing import List
 
 class Screen(BaseModel):
     screen_name: str
@@ -20,159 +17,163 @@ class Screen(BaseModel):
 class ScreenGenerationResponse(BaseModel):
     screens: List[Screen]
 
+def _format_messages(messages: List[Dict[str, str]]) -> Dict[str, Any]:
+    """Separates the system prompt and formats the chat history."""
+    system_instruction = None
+    contents = []
+    for message in messages:
+        if message["role"] == "system":
+            # The new API prefers a single system instruction.
+            system_instruction = message["content"]
+        else:
+            # The API expects the 'content' to be under a 'parts' key.
+            contents.append({'role': message['role'], 'parts': [message['content']]})
+    return {"system_instruction": system_instruction, "contents": contents}
+
+# --- Synchronous Provider for Structured JSON ---
 class GeminiProvider(LLMProvider):
-    def __init__(self, model_name: str, config):
+    def __init__(self, model_name: str, config: Any):
         self.api_key = os.environ.get("GOOGLE_API_KEY")
         self.model_name = model_name
         self.config = config
 
         if self.api_key:
             genai.configure(api_key=self.api_key)
-            self.client = genai.GenerativeModel(self.model_name)
+            self.client_configured = True
         else:
-            self.client = None
-    
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=60),
-        retry=retry_if_exception_type((ResourceExhausted, ServiceUnavailable))
-    )
+            self.client_configured = False
+
     def completion(self, messages: List[Dict[str, str]]) -> str:
-        if not self.client:
+        if not self.client_configured:
             raise LLMAPIKeyMissingError("Google API key not configured")
-            
+
         try:
-            generation_config = genai.GenerationConfig(
+            response_schema = {
+                "type": "object",
+                "properties": {
+                    "screens": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "screen_name": {"type": "string"},
+                                "sub_prompt": {"type": "string"}
+                            },
+                            "required": ["screen_name", "sub_prompt"]
+                        }
+                    }
+                },
+                "required": ["screens"]
+            }
+            generation_config = GenerationConfig(
                 temperature=self.config.temperature_options.default,
                 max_output_tokens=self.config.max_tokens,
                 response_mime_type="application/json",
-                response_schema=ScreenGenerationResponse
+                response_schema=response_schema
             )
 
-            safety_settings = [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            safety_settings: List[SafetySettingDict] = [
+                {"category": HarmCategory.HARM_CATEGORY_HARASSMENT, "threshold": "BLOCK_NONE"},
+                {"category": HarmCategory.HARM_CATEGORY_HATE_SPEECH, "threshold": "BLOCK_NONE"},
+                {"category": HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, "threshold": "BLOCK_NONE"},
+                {"category": HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, "threshold": "BLOCK_NONE"},
             ]
 
-            full_prompt = ""
-            for message in messages:
-                if message["role"] == "system":
-                    full_prompt += f"Instructions: {message['content']}\n\n"
-                elif message["role"] == "user":
-                    full_prompt += f"User: {message['content']}\n"
+            formatted_messages = _format_messages(messages)
+            
+            model = genai.GenerativeModel(
+                self.model_name,
+                system_instruction=formatted_messages["system_instruction"]
+            )
 
-            basic_model = genai.GenerativeModel('gemini-2.5-pro')
-
-            response = basic_model.generate_content(
-                full_prompt,
+            response = model.generate_content(
+                contents=formatted_messages["contents"],
                 generation_config=generation_config,
                 safety_settings=safety_settings
             )
-            
-            if not response.candidates:
-                raise Exception("No response candidates returned by Gemini API")
-                
-            candidate = response.candidates[0]
-            if not candidate.content or not candidate.content.parts:
-                finish_reason = candidate.finish_reason
-                if finish_reason == 2:  # SAFETY
-                    raise Exception("Content blocked by safety filters - try using GPT-4 instead")
-                elif finish_reason == 3:  # RECITATION  
-                    raise Exception("Content blocked due to recitation - try rephrasing")
-                else:
-                    raise Exception(f"No content generated, reason: {finish_reason}")
+
+            if response.prompt_feedback.block_reason:
+                raise LLMProviderCompletionFailedException(
+                    f"Content blocked by safety filters: {response.prompt_feedback.block_reason.name}"
+                )
             
             return response.text
-            
-        except (ResourceExhausted, ServiceUnavailable) as e:
-            logger.warning(f"Gemini API transient error: {str(e)}. Retrying...")
-            raise e
+
+        except (google_exceptions.ResourceExhausted, google_exceptions.ServiceUnavailable) as e:
+            logger.error(f"Gemini API failed after retries: {str(e)}")
+            raise LLMProviderCompletionFailedException(f"Gemini API resource error after retries: {str(e)}")
         except Exception as e:
             logger.error(f"Gemini API request failed: {str(e)}")
             raise LLMProviderCompletionFailedException(f"Gemini API request failed: {str(e)}")
-    
+
     def is_available(self) -> bool:
-        return self.client is not None
+        return self.client_configured
 
 class AsyncGeminiProvider(LLMProvider):
-    def __init__(self, model_name, config):
+    """
+    Asynchronous Gemini provider for general-purpose text generation, with an
+    option to force JSON output.
+    """
+    def __init__(self, model_name: str, config: Any):
         self.api_key = os.environ.get("GOOGLE_API_KEY")
         self.model_name = model_name
         self.config = config
 
         if self.api_key:
             genai.configure(api_key=self.api_key)
-            self.client = genai.GenerativeModel(self.model_name)
+            self.client_configured = True
         else:
-            self.client = None
-    
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=60),
-        retry=retry_if_exception_type((ResourceExhausted, ServiceUnavailable))
-    )
+            self.client_configured = False
+
     async def completion(self, messages: List[Dict[str, str]], force_json: bool = False) -> str:
-        if not self.client:
+        if not self.client_configured:
             raise LLMAPIKeyMissingError("Google API key not configured")
 
         try:
+            gen_config_params = {
+                "temperature": self.config.temperature_options.default,
+                "max_output_tokens": self.config.max_tokens,
+            }
+
             if force_json:
-                generation_config = genai.GenerationConfig(
-                    temperature=self.config.temperature_options.default,
-                    max_output_tokens=self.config.max_tokens,
-                    response_mime_type="application/json",
-                    response_schema=ScreenGenerationResponse
-                )
-            else:
-                generation_config = genai.GenerationConfig(
-                    temperature=self.config.temperature_options.default,
-                    max_output_tokens=self.config.max_tokens
-                )
+                gen_config_params["response_mime_type"] = "application/json"
+                gen_config_params["response_schema"] = ScreenGenerationResponse.model_json_schema()
 
-            safety_settings = [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            generation_config = GenerationConfig(**gen_config_params)
+            
+            safety_settings: List[SafetySettingDict] = [
+                {"category": HarmCategory.HARM_CATEGORY_HARASSMENT, "threshold": "BLOCK_NONE"},
+                {"category": HarmCategory.HARM_CATEGORY_HATE_SPEECH, "threshold": "BLOCK_NONE"},
+                {"category": HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, "threshold": "BLOCK_NONE"},
+                {"category": HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, "threshold": "BLOCK_NONE"},
             ]
+            
+            formatted_messages = _format_messages(messages)
+            
+            model = genai.GenerativeModel(
+                self.model_name,
+                system_instruction=formatted_messages["system_instruction"]
+            )
 
-            full_prompt = ""
-            for message in messages:
-                if message["role"] == "system":
-                    full_prompt += f"Instructions: {message['content']}\n\n"
-                elif message["role"] == "user":
-                    full_prompt += f"User: {message['content']}\n"
-
-            response = await self.client.generate_content_async(
-                full_prompt,
+            response = await model.generate_content_async(
+                contents=formatted_messages["contents"],
                 generation_config=generation_config,
                 safety_settings=safety_settings
             )
-            
-            if not response.candidates:
-                raise Exception("No response candidates returned by Gemini API")
-                
-            candidate = response.candidates[0]
-            if not candidate.content or not candidate.content.parts:
-                finish_reason = candidate.finish_reason
-                if finish_reason == 2:  # SAFETY
-                    raise Exception("Content blocked by safety filters - try using GPT-4 instead")
-                elif finish_reason == 3:  # RECITATION  
-                    raise Exception("Content blocked due to recitation - try rephrasing")
-                else:
-                    raise Exception(f"No content generated, reason: {finish_reason}")
-            
+
+            if response.prompt_feedback.block_reason:
+                raise LLMProviderCompletionFailedException(
+                    f"Content blocked by safety filters: {response.prompt_feedback.block_reason.name}"
+                )
+
             return response.text
-            
-        except (ResourceExhausted, ServiceUnavailable) as e:
-            logger.warning(f"Gemini API transient error: {str(e)}. Retrying...")
-            raise e
+
+        except (google_exceptions.ResourceExhausted, google_exceptions.ServiceUnavailable) as e:
+            logger.error(f"Gemini API failed after retries: {str(e)}")
+            raise LLMProviderCompletionFailedException(f"Gemini API resource error after retries: {str(e)}")
         except Exception as e:
             logger.error(f"Gemini API request failed: {str(e)}")
             raise LLMProviderCompletionFailedException(f"Gemini API request failed: {str(e)}")
-    
-    def is_available(self) -> bool:
-        return self.client is not None
 
+    def is_available(self) -> bool:
+        return self.client_configured

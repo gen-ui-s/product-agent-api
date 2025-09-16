@@ -1,7 +1,13 @@
 from typing import List, Dict, Any, Optional
 from models.db_models import Job, Component
 from job_config import JobStatus, ComponentStatus
-from exceptions import JobNotFoundException, JobStatusUpdateFailedException, ComponentsNotFoundException, ComponentStatusUpdateFailedException
+from exceptions import (
+    JobNotFoundException,
+    JobStatusUpdateFailedException,
+    ComponentsNotFoundException,
+    ComponentStatusUpdateFailedException,
+    DatabaseQueryFailedException
+)
 
 def insert_job_record(db: Dict, job_data: Dict[str, Any]) -> str:
     try:
@@ -28,8 +34,13 @@ def insert_component_records(db: Dict, components_data: List[Dict[str, Any]]) ->
 def find_job_by_id(db: Dict, job_id: str) -> Optional[Dict[str, Any]]:
     try:
         job = db["generation_jobs"].find_one({"_id": job_id})
+
     except Exception as e:
-        raise JobNotFoundException(f"Database query failed: {e}")
+        raise DatabaseQueryFailedException(f"Database query failed: {e}")
+
+    if not job:
+        raise JobNotFoundException(f"Job with ID '{job_id}' not found.")
+
     return job
 
 
@@ -37,7 +48,10 @@ def find_job_components(db: Dict, job_id: str) -> List[Dict[str, Any]]:
     try:
         component_docs = list(db["generated_components"].find({"parent_job_id": job_id}))
     except Exception as e:
-        raise ComponentsNotFoundException(f"Database query failed: {e}")
+        raise DatabaseQueryFailedException(f"Database query failed: {e}")
+    
+    if not component_docs:
+        raise ComponentsNotFoundException(f"Components for job {job_id} not found")
 
     return component_docs
 
@@ -48,10 +62,13 @@ def update_job_status(db: Dict, job_id: str, new_status: JobStatus) -> bool:
             {"_id": job_id},
             {"$set": {"status": new_status.value}}
         )
-        return result.modified_count > 0
     except Exception as e:
-        raise JobStatusUpdateFailedException(f"Failed to update job status: {str(e)}")
+        raise DatabaseQueryFailedException(f"Database query failed: {e}")
+    
+    if result.modified_count < 0:
+        raise JobStatusUpdateFailedException(f"Failed to update job status: No job modified")
 
+    return result
 
 def bulk_update_component_status(db: Dict, component_ids: List[str], new_status: ComponentStatus) -> int:
     try:
@@ -59,10 +76,14 @@ def bulk_update_component_status(db: Dict, component_ids: List[str], new_status:
             {"_id": {"$in": component_ids}},
             {"$set": {"status": new_status}}
         )
-        return result.modified_count
-    except Exception as e:
-        raise ComponentStatusUpdateFailedException(f"Failed to update component status: {str(e)}")
 
+    except Exception as e:
+        raise DatabaseQueryFailedException(f"Database query failed: {e}")
+
+    if result.modified_count < len(component_ids):
+        raise ComponentStatusUpdateFailedException(f"Failed to update all components")
+
+    return result
 
 def update_component_with_result(db: Dict, component_id: str, status: ComponentStatus, code: str = None, error_message: str = None, completed_at: str = None) -> bool:
     try:
@@ -78,6 +99,11 @@ def update_component_with_result(db: Dict, component_id: str, status: ComponentS
             {"_id": component_id},
             {"$set": update_data}
         )
-        return result.modified_count > 0
+
     except Exception as e:
+        raise DatabaseQueryFailedException(f"Database query failed: {e}")
+
+    if result.modified_count < 0:
         raise ComponentStatusUpdateFailedException(f"Failed to update component with result: {str(e)}")
+
+    return result

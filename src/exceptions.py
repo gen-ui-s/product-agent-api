@@ -1,6 +1,9 @@
 class DatabaseConnectionError(Exception):
     """Exception raised for errors in the database connection."""
 
+class DatabaseQueryFailedException(Exception):
+    """Raised if a query fails in the database"""
+
 class LLMProviderCompletionFailedException(Exception):
     """LLMProviderException is raised for errors related to LLM providers."""
 
