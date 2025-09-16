@@ -89,6 +89,8 @@ Resources:
           DB_USERNAME: !Ref DBUsername
           DB_PASSWORD: !Ref DBPassword
           DATABASE_URI: !Ref DatabaseUri
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         HttpApiEvent:
           Type: HttpApi

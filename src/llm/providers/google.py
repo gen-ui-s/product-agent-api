@@ -1,8 +1,8 @@
 import os
 from typing import List, Dict, Any
 
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig, SafetySettingDict, HarmCategory
+import google.genai as genai
+from google.genai.types import GenerationConfig, SafetySettingDict, HarmCategory
 from google.api_core import exceptions as google_exceptions
 from pydantic import BaseModel
 

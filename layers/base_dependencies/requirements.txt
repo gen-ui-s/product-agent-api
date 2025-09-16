@@ -3,4 +3,4 @@ requests==2.31.0
 pymongo==4.13.2
 pydantic==2.11.7
 openai==1.107.3
-google-genai
+google-genai==1.32.0
