@@ -50,6 +50,18 @@ Parameters:
     Default: sk-dummy-google-api-key
 
 
+Resources:
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "${AWS::StackName}-dependencies-layer"
+      Description: All dependencies
+      ContentUri: layers/base_dependencies/
+      CompatibleRuntimes:
+        - python3.11
+    Metadata:
+      BuildMethod: python3.11
+
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -71,8 +83,6 @@ Parameters:
           - !Ref PrivateSubnetTwoId
       Environment:
         Variables:
-          API_AUDIENCE: !Ref ApiAudience
-          AUTH0_DOMAIN: !Ref Auth0Domain
           OPENAI_API_KEY: !Ref OpenAIAPIKey
           GOOGLE_API_KEY: !Ref GoogleGenerativeAIKey
           ENV: !Ref Env
