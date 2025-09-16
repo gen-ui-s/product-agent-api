@@ -1,6 +1,5 @@
 import json
 from logs import logger
-from fastapi import status
 from models.response_models import ResponseModel
 
 from main import run
@@ -14,7 +13,7 @@ def lambda_handler(event, context):
         if not job_id:
             logger.error("job_id not found in payload")
             return ResponseModel(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 error='job_id is required in the payload.'
             )
 
@@ -23,19 +22,19 @@ def lambda_handler(event, context):
         result = run(job_id)
         
         return ResponseModel(
-            status_code=status.HTTP_200_OK,
+            status_code=200,
             message=f'Generating components for job_id: {job_id}'
         )
 
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON payload: {e}")
         return ResponseModel(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=400,
             error='Invalid JSON format.'
         )
     except Exception as e:
         logger.error(f"An error occurred in lambda_handler: {e}")
         return ResponseModel(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=500,
             error='Internal Server Error.'
         )

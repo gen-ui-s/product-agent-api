@@ -22,8 +22,8 @@ def attempt_connection():
 
         new_client = MongoClient(
             connection_uri,
-            # tls=True,
-            # tlsCAFile=CERTIFICATE_PATH,
+            tls=True,
+            tlsCAFile=CERTIFICATE_PATH,
             serverSelectionTimeoutMS=5000 
         )
         new_client.admin.command('ping')
