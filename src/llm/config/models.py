@@ -27,6 +27,26 @@ class LLMAvailableModels(Enum):
         )
     )
 
+    GPT_5 = LLMModelConfig(
+        name="gpt-5",
+        description="OpenAI GPT-5 model",
+        max_tokens=5000,
+        temperature_options=TemperatureOptions(
+            default=0.7,
+            creative=1.0,
+        )
+    )
+
+    GPT_5_MINI = LLMModelConfig(
+        name="gpt-5-mini",
+        description="OpenAI GPT-5 model",
+        max_tokens=5000,
+        temperature_options=TemperatureOptions(
+            default=0.7,
+            creative=1.0,
+        )
+    )
+    
     GEMINI_2_5_PRO =  LLMModelConfig(
         name="gemini-2.5-pro",
         description="Google Gemini 2" \

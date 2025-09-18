@@ -17,11 +17,16 @@ class LLMFactory:
     
     _providers = {
         LLMAvailableModels.GPT_4.value.name: {"class": OpenAIProvider, "config": LLMAvailableModels.GPT_4.value},
+        LLMAvailableModels.GPT_5.value.name: {"class": OpenAIProvider, "config": LLMAvailableModels.GPT_5.value},
+        LLMAvailableModels.GPT_5_MINI.value.name: {"class": OpenAIProvider, "config": LLMAvailableModels.GPT_5_MINI.value},
+
         LLMAvailableModels.GEMINI_2_5_PRO.value.name: {"class": GeminiProvider, "config": LLMAvailableModels.GEMINI_2_5_PRO.value}
     }
 
     _async_providers = {
         LLMAvailableModels.GPT_4.value.name: {"class": AsyncOpenAIProvider, "config": LLMAvailableModels.GPT_4.value},
+        LLMAvailableModels.GPT_5.value.name: {"class": AsyncOpenAIProvider, "config": LLMAvailableModels.GPT_5.value},
+        LLMAvailableModels.GPT_5_MINI.value.name: {"class": AsyncOpenAIProvider, "config": LLMAvailableModels.GPT_5_MINI.value},
         LLMAvailableModels.GEMINI_2_5_PRO.value.name: {"class": AsyncGeminiProvider, "config": LLMAvailableModels.GEMINI_2_5_PRO.value}
     }
 
