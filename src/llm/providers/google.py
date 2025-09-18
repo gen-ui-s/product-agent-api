@@ -2,7 +2,7 @@ import os
 from typing import List, Dict, Any
 
 import google.genai as genai
-from google.genai.types import GenerationConfig, SafetySettingDict, HarmCategory
+from google.genai.types import SafetySetting, HarmCategory, GenerateContentConfig, HttpOptions
 from google.api_core import exceptions as google_exceptions
 from pydantic import BaseModel
 
@@ -27,24 +27,19 @@ def _format_messages(messages: List[Dict[str, str]]) -> Dict[str, Any]:
             system_instruction = message["content"]
         else:
             # The API expects the 'content' to be under a 'parts' key.
-            contents.append({'role': message['role'], 'parts': [message['content']]})
+            contents = message["content"]
     return {"system_instruction": system_instruction, "contents": contents}
 
-# --- Synchronous Provider for Structured JSON ---
 class GeminiProvider(LLMProvider):
     def __init__(self, model_name: str, config: Any):
         self.api_key = os.environ.get("GOOGLE_API_KEY")
+        self.client = genai.Client(api_key=self.api_key,http_options=HttpOptions(api_version='v1')) if self.api_key else None
         self.model_name = model_name
         self.config = config
 
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.client_configured = True
-        else:
-            self.client_configured = False
 
     def completion(self, messages: List[Dict[str, str]]) -> str:
-        if not self.client_configured:
+        if not self.client:
             raise LLMAPIKeyMissingError("Google API key not configured")
 
         try:
@@ -65,14 +60,8 @@ class GeminiProvider(LLMProvider):
                 },
                 "required": ["screens"]
             }
-            generation_config = GenerationConfig(
-                temperature=self.config.temperature_options.default,
-                max_output_tokens=self.config.max_tokens,
-                response_mime_type="application/json",
-                response_schema=response_schema
-            )
 
-            safety_settings: List[SafetySettingDict] = [
+            safety_settings: List[SafetySetting] = [
                 {"category": HarmCategory.HARM_CATEGORY_HARASSMENT, "threshold": "BLOCK_NONE"},
                 {"category": HarmCategory.HARM_CATEGORY_HATE_SPEECH, "threshold": "BLOCK_NONE"},
                 {"category": HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, "threshold": "BLOCK_NONE"},
@@ -80,17 +69,30 @@ class GeminiProvider(LLMProvider):
             ]
 
             formatted_messages = _format_messages(messages)
-            
-            model = genai.GenerativeModel(
-                self.model_name,
-                system_instruction=formatted_messages["system_instruction"]
+
+            logger.info(formatted_messages["contents"])
+
+            generation_config = GenerateContentConfig(
+                temperature=self.config.temperature_options.default,
+                max_output_tokens=self.config.max_tokens,
+                # response_mime_type="application/json",
+                # system_instruction=formatted_messages["system_instruction"],
+                # safety_settings=safety_settings,
+                # response_schema=response_schema
             )
 
-            response = model.generate_content(
+            for model in self.client.models.list():
+                logger.info("MODELS")
+                logger.info(model)
+            
+            response = self.client.models.generate_content(
+                model="models/gemini-2.5-pro",
                 contents=formatted_messages["contents"],
-                generation_config=generation_config,
-                safety_settings=safety_settings
+                config=generation_config
             )
+
+            logger.info("RESPONSE")
+            logger.info(response)
 
             if response.prompt_feedback.block_reason:
                 raise LLMProviderCompletionFailedException(
@@ -107,65 +109,73 @@ class GeminiProvider(LLMProvider):
             raise LLMProviderCompletionFailedException(f"Gemini API request failed: {str(e)}")
 
     def is_available(self) -> bool:
-        return self.client_configured
+        return self.client
+    
 
 class AsyncGeminiProvider(LLMProvider):
-    """
-    Asynchronous Gemini provider for general-purpose text generation, with an
-    option to force JSON output.
-    """
     def __init__(self, model_name: str, config: Any):
         self.api_key = os.environ.get("GOOGLE_API_KEY")
+        self.client = genai.Client(api_key=self.api_key,http_options=HttpOptions(api_version='v1alpha')) if self.api_key else None
         self.model_name = model_name
         self.config = config
 
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.client_configured = True
-        else:
-            self.client_configured = False
 
-    async def completion(self, messages: List[Dict[str, str]], force_json: bool = False) -> str:
-        if not self.client_configured:
+    def completion(self, messages: List[Dict[str, str]]) -> str:
+        if not self.client:
             raise LLMAPIKeyMissingError("Google API key not configured")
 
         try:
-            gen_config_params = {
-                "temperature": self.config.temperature_options.default,
-                "max_output_tokens": self.config.max_tokens,
+            response_schema = {
+                "type": "object",
+                "properties": {
+                    "screens": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "screen_name": {"type": "string"},
+                                "sub_prompt": {"type": "string"}
+                            },
+                            "required": ["screen_name", "sub_prompt"]
+                        }
+                    }
+                },
+                "required": ["screens"]
             }
 
-            if force_json:
-                gen_config_params["response_mime_type"] = "application/json"
-                gen_config_params["response_schema"] = ScreenGenerationResponse.model_json_schema()
-
-            generation_config = GenerationConfig(**gen_config_params)
-            
-            safety_settings: List[SafetySettingDict] = [
+            safety_settings: List[SafetySetting] = [
                 {"category": HarmCategory.HARM_CATEGORY_HARASSMENT, "threshold": "BLOCK_NONE"},
                 {"category": HarmCategory.HARM_CATEGORY_HATE_SPEECH, "threshold": "BLOCK_NONE"},
                 {"category": HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, "threshold": "BLOCK_NONE"},
                 {"category": HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, "threshold": "BLOCK_NONE"},
             ]
-            
+
             formatted_messages = _format_messages(messages)
-            
-            model = genai.GenerativeModel(
-                self.model_name,
-                system_instruction=formatted_messages["system_instruction"]
+
+            logger.info(formatted_messages["contents"])
+
+            generation_config = GenerateContentConfig(
+                temperature=self.config.temperature_options.default,
+                max_output_tokens=self.config.max_tokens,
+                # response_mime_type="application/json",
+                # system_instruction=formatted_messages["system_instruction"],
+                # safety_settings=safety_settings,
+                # response_schema=response_schema
             )
 
-            response = await model.generate_content_async(
+            
+            response = self.client.models.generate_content_async(
+                model=self.model_name,
                 contents=formatted_messages["contents"],
-                generation_config=generation_config,
-                safety_settings=safety_settings
+                config=generation_config
             )
+
 
             if response.prompt_feedback.block_reason:
                 raise LLMProviderCompletionFailedException(
                     f"Content blocked by safety filters: {response.prompt_feedback.block_reason.name}"
                 )
-
+            
             return response.text
 
         except (google_exceptions.ResourceExhausted, google_exceptions.ServiceUnavailable) as e:
@@ -176,4 +186,4 @@ class AsyncGeminiProvider(LLMProvider):
             raise LLMProviderCompletionFailedException(f"Gemini API request failed: {str(e)}")
 
     def is_available(self) -> bool:
-        return self.client_configured
+        return self.client

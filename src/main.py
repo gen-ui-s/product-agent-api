@@ -99,11 +99,11 @@ def run(job_id: str):
         save_generation_results_to_db(db, job_components, generation_results)
         update_job_status(db, job_id, JobStatus.COMPLETED)
 
-
-    except Exception as e:
-        logger.error(f"Internal error: {e}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        raise e
+    except (PromptGenerationFailedException, ComponentGeneratedLengthMismatchException) as e:
+        logger.info(f"Setting all components as failed. Reason: {e}")
+        update_job_status(db, job_id, JobStatus.COMPLETED)
+        bulk_update_component_status(db, job_component_ids, ComponentStatus.FAILED)
+        return
 
     except (JobNotFoundException, JobStatusUpdateFailedException, ComponentsNotFoundException, ComponentStatusUpdateFailedException) as e:
         #Don't change  state in case of dabatase errors to protect data integrity.
@@ -111,11 +111,11 @@ def run(job_id: str):
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise e
 
-    except (PromptGenerationFailedException, ComponentGeneratedLengthMismatchException) as e:
-        logger.info(f"Setting all components as failed. Reason: {e}")
-        update_job_status(db, job_id, JobStatus.COMPLETED)
-        bulk_update_component_status(db, job_component_ids, ComponentStatus.FAILED)
-        return
+    except Exception as e:
+        logger.error(f"Internal error: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise e
+
         
 
 
