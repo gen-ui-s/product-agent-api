@@ -6,7 +6,7 @@ from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedExcepti
 from logs import logger
 
 
-TIMEOUT = 30
+TIMEOUT = 120
 class  OpenAIProvider(LLMProvider):
     def __init__(self, model_name: str, config):
         self.api_key = os.environ.get("OPENAI_API_KEY")
@@ -24,7 +24,7 @@ class  OpenAIProvider(LLMProvider):
                 model=self.model_name,
                 messages=messages,
                 temperature=self.config.temperature_options.default,
-                max_tokens=self.config.max_tokens,
+                max_completion_tokens=self.config.max_tokens,
                 timeout=self.timeout
             )
             return response.choices[0].message.content
@@ -53,7 +53,7 @@ class AsyncOpenAIProvider(LLMProvider):
                 model=self.model_name,
                 messages=messages,
                 temperature=self.config.temperature_options.default,
-                max_tokens=self.config.max_tokens,
+                max_completion_tokens=self.config.max_tokens,
                 timeout=self.timeout
             )
             return response.choices[0].message.content
