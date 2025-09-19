@@ -10,6 +10,7 @@ from workflows.component_generator import AsyncComponentGenerator
 from db.job_utils import find_job_by_id, find_job_components, update_job_status, bulk_update_component_status, update_component_with_result
 from models.db_models import Job, Component
 from job_config import JobStatus, ComponentStatus
+from llm.providers.factory import LLMFactory, LLMProvider
 from exceptions import (
     ComponentGenerationFailedException,
     ComponentGeneratedLengthMismatchException,
@@ -29,13 +30,13 @@ def generate_component_prompts(job_data: Job) -> List[str]:
     return component_prompts["screens"]
 
 
-async def _generate_single_component(job_data: Job, prompt: str) -> Component:
+async def _generate_single_component(job_data: Job, prompt: str, provider: LLMProvider) -> Component:
     try:
         component_generator = AsyncComponentGenerator(
             model_name=job_data["model"],
             user_prompt=prompt
         )
-        component = await component_generator.generate_component_code()
+        component = await component_generator.generate_component_code(provider)
         component_id = component.id
         logger.info(f"Successful component: {component_id}")
         return component
@@ -47,8 +48,10 @@ async def _generate_single_component(job_data: Job, prompt: str) -> Component:
 async def generate_components_concurrently(job_data: Job, component_prompts: List[str]) -> dict:
     logger.info(f"Starting concurrent generation for {len(component_prompts)} prompts for job {job_data['_id']}. ")
 
+    provider = LLMFactory.create_async_provider(job_data["model"])
+
     tasks = [
-        _generate_single_component(job_data, prompt['sub_prompt'])
+        _generate_single_component(job_data, prompt['sub_prompt'], provider)
         for prompt in component_prompts
     ]
 
@@ -88,6 +91,8 @@ def run(job_id: str):
         db = get_db()
         job_data: Job = find_job_by_id(db, job_id)
 
+        from llm.config.models import LLMAvailableModels
+        job_data["model"] = LLMAvailableModels.GPT_o4_MINI.value.name
         update_job_status(db, job_id, JobStatus.RUNNING)
         job_components = find_job_components(db, job_id)
         job_component_ids = [c["_id"] for c in job_components]

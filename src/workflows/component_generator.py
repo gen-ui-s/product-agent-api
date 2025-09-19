@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from typing import List
 from exceptions import LLMProviderCompletionFailedException, SVGInvalidException
 from models.request_models import Component
-from llm.providers.factory import LLMFactory
+from llm.providers.factory import LLMFactory, LLMProvider
 from workflows.config.prompts import COMPONENT_GENERATOR_SYSTEM_PROMPT
 from logs import logger
 
@@ -35,9 +35,8 @@ class AsyncComponentGenerator:
             logger.error(f"SVG validation failed: {e}")
             return False
 
-    async def _make_llm_request(self, messages: List) -> str:
+    async def _make_llm_request(self, messages: List, provider: LLMProvider) -> str:
         try:
-            provider = LLMFactory.create_async_provider(self.model_name)
             model_response = await provider.completion(
                 messages=messages
             )
@@ -49,13 +48,13 @@ class AsyncComponentGenerator:
         return model_response
 
     
-    async def generate_component_code(self) -> str:
+    async def generate_component_code(self, provider: LLMProvider) -> str:
         messages = [
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": self.user_prompt}
         ]
 
-        generated_code = await self._make_llm_request(messages)
+        generated_code = await self._make_llm_request(messages, provider)
 
         if not self._validate_svg(generated_code):
             logger.error(f"Generated SVG is invalid for prompt: {self.user_prompt[:50]}...")

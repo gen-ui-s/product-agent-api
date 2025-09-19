@@ -27,7 +27,7 @@ class LLMFactory:
         LLMAvailableModels.GPT_4.value.name: {"class": AsyncOpenAIProvider, "config": LLMAvailableModels.GPT_4.value},
         LLMAvailableModels.GPT_o3.value.name: {"class": AsyncOpenAIProvider, "config": LLMAvailableModels.GPT_o3.value},
         LLMAvailableModels.GPT_o4_MINI.value.name: {"class": AsyncOpenAIProvider, "config": LLMAvailableModels.GPT_o4_MINI.value},
-
+        LLMAvailableModels.GPT_5_MINI.value.name: {"class": AsyncOpenAIProvider, "config": LLMAvailableModels.GPT_5_MINI.value},
         LLMAvailableModels.GEMINI_2_5_PRO.value.name: {"class": AsyncGeminiProvider, "config": LLMAvailableModels.GEMINI_2_5_PRO.value}
     }
 
