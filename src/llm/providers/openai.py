@@ -14,7 +14,7 @@ class  OpenAIProvider(LLMProvider):
         self.model_name = model_name
         self.config = config
         self.timeout = TIMEOUT
-        
+
     def completion(self, messages: List[Dict[str, str]]) -> str:
         if not self.client:
             raise LLMAPIKeyMissingError("OpenAI API key not configured")
@@ -43,7 +43,7 @@ class AsyncOpenAIProvider(LLMProvider):
         self.model_name = model_name
         self.config = config
         self.timeout = TIMEOUT
-        
+
     async def completion(self, messages: List[Dict[str, str]]) -> str:
         if not self.client:
             raise LLMAPIKeyMissingError("OpenAI API key not configured")

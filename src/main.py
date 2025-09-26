@@ -81,13 +81,14 @@ def save_generation_results_to_db(db, job_components: List[dict], generation_res
 
     for db_component, result in zip(job_components, generation_results):
         if isinstance(result, ComponentGenerationFailedException):
-            logger.info(f"Updating component {db_component['_id']} as FAILED")
+            logger.info(f"Updating component {db_component['_id']} as FAILED. Error: {str(result)}")
             update_component_with_result(
                 db,
                 component_id=db_component['_id'],
                 status=ComponentStatus.FAILED,
                 code=getattr(result, 'invalid_code', None),
-                error_message=result.message
+                error_message=result.message,
+                completed_at=current_time
             )
         else:
             logger.info(f"Updating component {db_component['_id']} as SUCCESSFUL")
@@ -134,8 +135,3 @@ def run(job_id: str):
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise e
 
-        
-
-
-
-    
