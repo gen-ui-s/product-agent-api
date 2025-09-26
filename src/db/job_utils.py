@@ -80,7 +80,7 @@ def bulk_update_component_status(db: Dict, component_ids: List[str], new_status:
     except Exception as e:
         raise DatabaseQueryFailedException(f"Database query failed: {e}")
 
-    if result.modified_count < len(component_ids):
+    if result.matched_count < len(component_ids):
         raise ComponentStatusUpdateFailedException(f"Failed to update all components")
 
     return result

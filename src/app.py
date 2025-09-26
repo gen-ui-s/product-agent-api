@@ -7,9 +7,9 @@ from main import run
 def lambda_handler(event, context):
     try:
 
-        # body = event.get("body", event)
-        # payload = body
-        job_id = "f89636ce-b8ad-4b32-80d4-b66414fb4965"
+        body = event.get("body", event)
+        payload = body
+        job_id = payload.get('job_id', None)
 
         if not job_id:
             logger.error("job_id not found in payload")

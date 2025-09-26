@@ -25,7 +25,7 @@ def main():
     DB_PASSWORD = os.environ.get("DB_PASSWORD")
     
 
-    test_job_id = "put job id here" # Original job ID
+    test_job_id = {"body": "<job-id-here>"} # Original job ID
 
     mock_event = {
         "body": json.dumps({
