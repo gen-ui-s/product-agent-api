@@ -66,7 +66,7 @@ def update_job_status(db: Dict, job_id: str, new_status: JobStatus) -> Dict:
     except Exception as e:
         raise DatabaseQueryFailedException(f"Database query failed: {e}")
     
-    if result.modified_count <= 0:
+    if result.matched_count <= 0:
         raise JobStatusUpdateFailedException(f"Failed to update job status: No job modified")
 
     return result
@@ -81,8 +81,8 @@ def update_job_optimized_prompt(db: Dict, job_id: str, optimized_prompt: List[st
     except Exception as e:
         raise DatabaseQueryFailedException(f"Database query failed: {e}")
     
-    if result.modified_count <= 0:
-        raise JobPromptUpdateFailedException(f"Failed to update job status: No job modified")
+    if result.matched_count <= 0:
+        raise JobPromptUpdateFailedException(f"Failed to update job prompt: No job modified")
 
 def bulk_update_component_status(db: Dict, component_ids: List[str], new_status: ComponentStatus) -> int:
     try:

@@ -3,7 +3,6 @@ from typing import List, Dict, Any
 
 import google.genai as genai
 from google.genai.types import SafetySetting, HarmCategory, GenerateContentConfig, HttpOptions
-from pydantic import BaseModel
 
 from llm.providers.factory import LLMProvider
 from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedException
@@ -29,7 +28,6 @@ class GeminiProvider(LLMProvider):
         self.client = genai.Client(api_key=self.api_key) if self.api_key else None
         self.model_name = model_name
         self.config = config
-
 
     def completion(self, messages: List[Dict[str, str]]) -> str:
         if not self.client:
@@ -95,13 +93,13 @@ class GeminiProvider(LLMProvider):
 class AsyncGeminiProvider(LLMProvider):
     def __init__(self, model_name: str, config: Any):
         self.api_key = os.environ.get("GOOGLE_API_KEY")
-        self.client = genai.Client(api_key=self.api_key) if self.api_key else None
+        self.async_client = genai.Client(api_key=self.api_key).aio if self.api_key else None
         self.model_name = model_name
         self.config = config
 
 
     async def completion(self, messages: List[Dict[str, str]]) -> str:
-        if not self.client:
+        if not self.async_client:
             raise LLMAPIKeyMissingError("Google API key not configured")
 
         try:
@@ -115,14 +113,12 @@ class AsyncGeminiProvider(LLMProvider):
 
             formatted_messages = _format_messages(messages)
 
-            logger.info(formatted_messages["contents"])
-
             generation_config = GenerateContentConfig(
                 system_instruction=formatted_messages["system_instruction"],
                 safety_settings=safety_settings,
             )
 
-            response = await self.client.aio.models.generate_content(
+            response = await self.async_client.models.generate_content(
                 model=self.model_name,
                 contents=formatted_messages["contents"],
                 config=generation_config
@@ -140,4 +136,4 @@ class AsyncGeminiProvider(LLMProvider):
             raise LLMProviderCompletionFailedException(f"Gemini API request failed: {str(e)}")
 
     def is_available(self) -> bool:
-        return self.client
+        return self.async_client
