@@ -39,6 +39,7 @@ class Job:
     platform: AvailablePlatforms
     generation_type: GenerationType
     created_at: str
+    optimized_prompt: Optional[str] = None
     completed_at: Optional[str] = None
     error_message: Optional[str] = None
     
@@ -52,11 +53,13 @@ class Job:
             "model": self.model,
             "platform": self.platform,
             "generation_type": self.generation_type,
+            "optimized_prompt": self.optimized_prompt,
             "created_at": self.created_at,
             "completed_at": self.completed_at,
             "error_message": self.error_message
         }
-        
+
+  
 @dataclass
 class Component:
     _id: str
