@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description:
+  Serverless Lambda for our Genuis MVP
+
+Parameters:
+  Env:
+    Type: String
+    Description: Deployment environment (e.g., dev, stage, prod).
+    Default: dev
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: The VPC ID for the Lambda function.
+    Default: vpc-dummy
+  PrivateSubnetOneId:
+    Type: AWS::EC2::Subnet::Id
+    Description: First private subnet ID for the Lambda.
+    Default: subnet-dummy-1
+  PrivateSubnetTwoId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Second private subnet ID for the Lambda.
+    Default: subnet-dummy-2
+  LambdaSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: The Security Group ID for the Lambda function.
+    Default: sg-lambda-dummy
+  DBUsername:
+    Type: String
+    Description: Username for the DocumentDB database.
+    NoEcho: true
+    Default: dbuser
+  DBPassword:
+    Type: String
+    Description: Password for the DocumentDB database.
+    NoEcho: true
+    Default: dbpassword
+  DatabaseUri:
+    Type: String
+    Description: URI for the DocumentDB database.
+    Default: mongodb://dummy-uri:27017
+  OpenAIAPIKey:
+    Type: String
+    Description: OpenAI API Key for LLM requests.
+    NoEcho: true
+    Default: sk-dummy-openai-api-key
+  GoogleGenerativeAIKey:
+    Type: String
+    Description: Google API Key for Gemini
+    NoEcho: true
+    Default: sk-dummy-google-api-key
+
+
+Resources:
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "${AWS::StackName}-dependencies-layer"
+      Description: All dependencies
+      ContentUri: layers/base_dependencies/
+      CompatibleRuntimes:
+        - python3.11
+    Metadata:
+      BuildMethod: python3.11
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-genuis"
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Timeout: 180
+      EphemeralStorage:
+        Size: 512   
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupId
+        SubnetIds:
+          - !Ref PrivateSubnetOneId
+          - !Ref PrivateSubnetTwoId
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Ref OpenAIAPIKey
+          GOOGLE_API_KEY: !Ref GoogleGenerativeAIKey
+          ENV: !Ref Env
+          DB_USERNAME: !Ref DBUsername
+          DB_PASSWORD: !Ref DBPassword
+          DATABASE_URI: !Ref DatabaseUri
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        HttpApiEvent:
+          Type: HttpApi
+
+Outputs:
+  HttpApiUrl:
+    Description: "URL for the HTTPS API"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
