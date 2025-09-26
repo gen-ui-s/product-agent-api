@@ -7,7 +7,14 @@ from aws.db_connection import get_db
 from models.request_models import Component
 from workflows.prompt_generator import PromptGenerator
 from workflows.component_generator import AsyncComponentGenerator
-from db.job_utils import find_job_by_id, find_job_components, update_job_status, bulk_update_component_status, update_component_with_result
+from db.job_utils import (
+    find_job_by_id,
+    find_job_components,
+    update_job_status,
+    update_job_optimized_prompt,
+    bulk_update_component_status,
+    update_component_with_result
+)
 from models.db_models import Job, Component
 from job_config import JobStatus, ComponentStatus
 from llm.providers.factory import LLMFactory, LLMProvider
@@ -18,7 +25,8 @@ from exceptions import (
     ComponentStatusUpdateFailedException,
     JobNotFoundException,
     JobStatusUpdateFailedException,
-    PromptGenerationFailedException
+    PromptGenerationFailedException,
+    SVGInvalidException
 )
 from logs import logger
 import traceback
@@ -40,10 +48,15 @@ async def _generate_single_component(job_data: Job, prompt: str, provider: LLMPr
         component_id = component.id
         logger.info(f"Successful component: {component_id}")
         return component
-    except Exception as e:
-        logger.info(f"Component generation failed. Error: {e}")
+    
+    except SVGInvalidException as e:
+        logger.error(f"Component generation failed. Error: {e.message}")
+        raise ComponentGenerationFailedException(message=e.message, invalid_code=e.invalid_code)
 
-        return ComponentGenerationFailedException(str(e))
+    except Exception as e:
+        logger.error(f"Component generation failed. Error: {str(e)}")
+        raise ComponentGenerationFailedException(message=str(e), invalid_code=None)
+    
 
 async def generate_components_concurrently(job_data: Job, component_prompts: List[str]) -> dict:
     logger.info(f"Starting concurrent generation for {len(component_prompts)} prompts for job {job_data['_id']}. ")
@@ -73,7 +86,8 @@ def save_generation_results_to_db(db, job_components: List[dict], generation_res
                 db,
                 component_id=db_component['_id'],
                 status=ComponentStatus.FAILED,
-                error_message=str(result)
+                code=getattr(result, 'invalid_code', None),
+                error_message=result.message
             )
         else:
             logger.info(f"Updating component {db_component['_id']} as SUCCESSFUL")
@@ -95,9 +109,10 @@ def run(job_id: str):
         job_components = find_job_components(db, job_id)
         job_component_ids = [c["_id"] for c in job_components]
         components_prompts: List[str] = generate_component_prompts(job_data)
+        update_job_optimized_prompt(db, job_id, str(components_prompts))
         bulk_update_component_status(db, job_component_ids, ComponentStatus.RUNNING)
 
-        generation_results: dict = asyncio.run(generate_components_concurrently(job_data, components_prompts))
+        generation_results: dict = asyncio.run(generate_components_concurrently(job_data, components_prompts["screens"]))
 
         save_generation_results_to_db(db, job_components, generation_results)
         update_job_status(db, job_id, JobStatus.COMPLETED)
