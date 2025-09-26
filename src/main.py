@@ -27,7 +27,7 @@ import traceback
 def generate_component_prompts(job_data: Job) -> List[str]:
     prompt_generator = PromptGenerator(job_data)
     component_prompts = prompt_generator.run()
-    return component_prompts["screens"]
+    return component_prompts
 
 
 async def _generate_single_component(job_data: Job, prompt: str, provider: LLMProvider) -> Component:
@@ -91,8 +91,6 @@ def run(job_id: str):
         db = get_db()
         job_data: Job = find_job_by_id(db, job_id)
 
-        from llm.config.models import LLMAvailableModels
-        job_data["model"] = LLMAvailableModels.GPT_o4_MINI.value.name
         update_job_status(db, job_id, JobStatus.RUNNING)
         job_components = find_job_components(db, job_id)
         job_component_ids = [c["_id"] for c in job_components]
