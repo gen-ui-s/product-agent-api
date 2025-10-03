@@ -56,6 +56,10 @@ class AsyncComponentGenerator:
 
         generated_code = await self._make_llm_request(messages, provider)
 
+        if not generated_code: 
+            logger.error("Empty LLM Response")
+            raise Exception("Empty LLM Response")
+
         if not self._validate_svg(generated_code):
             raise SVGInvalidException(
                 message=f"Generated SVG is not valid XML or doesn't follow SVG structure",
