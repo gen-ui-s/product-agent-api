@@ -4,6 +4,7 @@ from job_config import JobStatus, ComponentStatus
 from exceptions import (
     JobNotFoundException,
     JobStatusUpdateFailedException,
+    JobPromptUpdateFailedException,
     ComponentsNotFoundException,
     ComponentStatusUpdateFailedException,
     DatabaseQueryFailedException
@@ -56,7 +57,7 @@ def find_job_components(db: Dict, job_id: str) -> List[Dict[str, Any]]:
     return component_docs
 
 
-def update_job_status(db: Dict, job_id: str, new_status: JobStatus) -> bool:
+def update_job_status(db: Dict, job_id: str, new_status: JobStatus) -> Dict:
     try:
         result = db["generation_jobs"].update_one(
             {"_id": job_id},
@@ -65,10 +66,23 @@ def update_job_status(db: Dict, job_id: str, new_status: JobStatus) -> bool:
     except Exception as e:
         raise DatabaseQueryFailedException(f"Database query failed: {e}")
     
-    if result.modified_count < 0:
+    if result.matched_count <= 0:
         raise JobStatusUpdateFailedException(f"Failed to update job status: No job modified")
 
     return result
+
+def update_job_optimized_prompt(db: Dict, job_id: str, optimized_prompt: List[str]) -> Dict:
+    try:
+        result = db["generation_jobs"].update_one(
+            {"_id": job_id},
+            {"$set": {"optimized_prompt": optimized_prompt}}
+        )   
+
+    except Exception as e:
+        raise DatabaseQueryFailedException(f"Database query failed: {e}")
+    
+    if result.matched_count <= 0:
+        raise JobPromptUpdateFailedException(f"Failed to update job prompt: No job modified")
 
 def bulk_update_component_status(db: Dict, component_ids: List[str], new_status: ComponentStatus) -> int:
     try:

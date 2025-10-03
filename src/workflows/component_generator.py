@@ -48,7 +48,7 @@ class AsyncComponentGenerator:
         return model_response
 
     
-    async def generate_component_code(self, provider: LLMProvider) -> str:
+    async def generate_component_code(self, provider: LLMProvider) -> Component:
         messages = [
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": self.user_prompt}
@@ -57,8 +57,9 @@ class AsyncComponentGenerator:
         generated_code = await self._make_llm_request(messages, provider)
 
         if not self._validate_svg(generated_code):
-            logger.error(f"Generated SVG is invalid for prompt: {self.user_prompt[:50]}...")
-            raise SVGInvalidException(f"Generated SVG is not valid XML or doesn't follow SVG structure")
+            raise SVGInvalidException(
+                message=f"Generated SVG is not valid XML or doesn't follow SVG structure",
+                invalid_code=generated_code)
 
         component = Component(
             id=str(uuid.uuid4()),
