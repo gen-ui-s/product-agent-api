@@ -43,6 +43,7 @@ class AsyncOpenAIProvider(LLMProvider):
         self.model_name = model_name
         self.config = config
         self.timeout = TIMEOUT
+        self.count = 0
 
     async def completion(self, messages: List[Dict[str, str]]) -> str:
         if not self.client:
@@ -56,6 +57,8 @@ class AsyncOpenAIProvider(LLMProvider):
                 max_completion_tokens=self.config.max_tokens,
                 timeout=self.timeout
             )
+            self.count += 1
+            logger.info(f"AsyncOpenAI {self.count} response: {response}")
             return response.choices[0].message.content
         except Exception as e:
             logger.error(f"OpenAI API request failed: {str(e)}")
