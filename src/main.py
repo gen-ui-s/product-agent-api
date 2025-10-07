@@ -103,7 +103,7 @@ def save_generation_results_to_db(db, job_components: List[dict], generation_res
             )
             successful_component_count += 1
         
-        return successful_component_count
+    return successful_component_count
 
 
 def run(job_id: str):
