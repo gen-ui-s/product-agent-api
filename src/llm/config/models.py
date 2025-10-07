@@ -15,12 +15,12 @@ class LLMModelConfig:
     max_tokens: int
     temperature_options: TemperatureOptions
     
-
+MAX_TOKENS_OPENAI = 8192
 class LLMAvailableModels(Enum):
     GPT_4 = LLMModelConfig(
         name="gpt-4",
         description="OpenAI GPT-4 model",
-        max_tokens=5000,
+        max_tokens=MAX_TOKENS_OPENAI,
         temperature_options=TemperatureOptions(
             default=0.7,
             creative=1.0,
@@ -30,7 +30,7 @@ class LLMAvailableModels(Enum):
     GPT_5_MINI = LLMModelConfig(
         name="gpt-5-mini",
         description="OpenAI GPT-5-mini model",
-        max_tokens=5000,
+        max_tokens=MAX_TOKENS_OPENAI,
         temperature_options=TemperatureOptions(
             default=1,
             creative=1.0,
@@ -40,7 +40,7 @@ class LLMAvailableModels(Enum):
     GPT_o3 = LLMModelConfig(
         name="o3",
         description="OpenAI o3 model",
-        max_tokens=5000,
+        max_tokens=MAX_TOKENS_OPENAI,
         temperature_options=TemperatureOptions(
             default=1,
             creative=1.0,
@@ -50,7 +50,7 @@ class LLMAvailableModels(Enum):
     GPT_o4_MINI = LLMModelConfig(
         name="o4-mini",
         description="OpenAI 04-mini model",
-        max_tokens=5000,
+        max_tokens=MAX_TOKENS_OPENAI,
         temperature_options=TemperatureOptions(
             default=1,
             creative=1.0,
