@@ -13,7 +13,8 @@ from db.job_utils import (
     update_job_status,
     update_job_optimized_prompt,
     bulk_update_component_status,
-    update_component_with_result
+    update_component_with_result,
+    consume_user_credits
 )
 from models.db_models import Job, Component
 from job_config import JobStatus, ComponentStatus
@@ -78,6 +79,7 @@ def save_generation_results_to_db(db, job_components: List[dict], generation_res
         raise ComponentGeneratedLengthMismatchException(f"Mismatch between job components ({len(job_components)}) and generation results ({len(generation_results)})")
 
     current_time = datetime.now().isoformat()
+    successful_component_count = 0
 
     for db_component, result in zip(job_components, generation_results):
         if isinstance(result, ComponentGenerationFailedException):
@@ -99,6 +101,9 @@ def save_generation_results_to_db(db, job_components: List[dict], generation_res
                 code=result.code,
                 completed_at=current_time
             )
+            successful_component_count += 1
+        
+        return successful_component_count
 
 
 def run(job_id: str):
@@ -115,8 +120,9 @@ def run(job_id: str):
 
         generation_results: dict = asyncio.run(generate_components_concurrently(job_data, components_prompts["screens"]))
 
-        save_generation_results_to_db(db, job_components, generation_results)
+        successful_component_count = save_generation_results_to_db(db, job_components, generation_results)
         update_job_status(db, job_id, JobStatus.COMPLETED)
+        consume_user_credits(db, job_data["user_id"], successful_component_count)
 
     except (PromptGenerationFailedException, ComponentGeneratedLengthMismatchException) as e:
         logger.info(f"Setting all components as failed. Reason: {e}")
