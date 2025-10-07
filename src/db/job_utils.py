@@ -7,7 +7,8 @@ from exceptions import (
     JobPromptUpdateFailedException,
     ComponentsNotFoundException,
     ComponentStatusUpdateFailedException,
-    DatabaseQueryFailedException
+    DatabaseQueryFailedException,
+    UserFailedUpdateException
 )
 
 def insert_job_record(db: Dict, job_data: Dict[str, Any]) -> str:
@@ -121,3 +122,26 @@ def update_component_with_result(db: Dict, component_id: str, status: ComponentS
         raise ComponentStatusUpdateFailedException(f"Failed to update component with result: {str(e)}")
 
     return result
+
+def consume_user_credits(db: Dict, user_id: str, successful_component_count: int) -> int:    
+    if successful_component_count == 0:
+        return 0
+    
+    try:
+        result = db["users"].update_one(
+            {
+                "_id": user_id,
+                "credits": {"$gte": successful_component_count}
+            },
+            {
+                "$inc": {"credits": -successful_component_count}
+            }
+        )
+        
+    except Exception as e:
+        raise DatabaseQueryFailedException(f"Database query failed: {e}")
+    
+    if result.modified_count <= 0:
+        raise UserFailedUpdateException("Failed to consume user credits")
+    
+    return result.modified_count
