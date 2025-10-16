@@ -7,17 +7,13 @@ from exceptions import LLMProviderCompletionFailedException
 from models.request_models import Component
 from llm.providers.factory import LLMProvider
 from workflows.config.prompts import COMPONENT_GENERATOR_SYSTEM_PROMPT
-from llm.providers.schemas import COMPONENT_JSON_SCHEMA_TEXT
 from logs import logger
 
 
 class AsyncComponentGenerator:
     def __init__(self, model_name: str, user_prompt: str):
         self.model_name = model_name
-        self.system_prompt = COMPONENT_GENERATOR_SYSTEM_PROMPT.format(
-            schema_text=COMPONENT_JSON_SCHEMA_TEXT,
-            platform="mobile"
-        )
+        self.system_prompt = COMPONENT_GENERATOR_SYSTEM_PROMPT
         self.user_prompt = user_prompt
 
 

@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 
 import google.genai as genai
 from google.genai.types import SafetySetting, HarmCategory, GenerateContentConfig
-from llm.providers.schemas import GEMINI_GENERATOR_SCHEMA
+from llm.providers.schemas import GEMINI_GENERATOR_SCHEMA, COMPONENT_JSON_SCHEMA_TEXT
 from llm.providers.factory import LLMProvider
 from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedException
 from logs import logger
@@ -96,9 +96,26 @@ class AsyncGeminiProvider(LLMProvider):
 
             formatted_messages = _format_messages(messages)
 
+            system_instruction = formatted_messages["system_instruction"]
+            if system_instruction:
+                schema_section = f"""
+                    <json_schema>
+                    Your output MUST conform to the following JSON schema. This schema defines the exact structure, property types, and valid values for the component tree. Pay special attention to:
+                    - The "children" property uses "$ref": "#" which means it recursively references the root schema - children can contain the same structure as the parent
+                    - Only "type" is required at the root level
+                    - Use only the enum values specified for properties like type, align, justify, etc.
+
+                    ```json
+                    {COMPONENT_JSON_SCHEMA_TEXT}
+                    ```
+                    </json_schema>
+
+                    """
+                system_instruction = schema_section + system_instruction
+
             generation_config = GenerateContentConfig(
                 response_mime_type="application/json",
-                system_instruction=formatted_messages["system_instruction"],
+                system_instruction=system_instruction,
                 safety_settings=safety_settings
             )
 
