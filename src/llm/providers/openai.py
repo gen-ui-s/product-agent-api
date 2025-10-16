@@ -7,15 +7,6 @@ from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedExcepti
 from logs import logger
 
 TIMEOUT = 120
-
-class Screen(BaseModel):
-    screen_name: str
-    sub_prompt: str
-
-class ScreenList(BaseModel):
-    steps: list[Screen]
-
-
 class  OpenAIProvider(LLMProvider):
     def __init__(self, model_name: str, config):
         self.api_key = os.environ.get("OPENAI_API_KEY")
@@ -28,6 +19,32 @@ class  OpenAIProvider(LLMProvider):
         if not self.client:
             raise LLMAPIKeyMissingError("OpenAI API key not configured")
             
+        response_schema = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "screen_generation_response",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "screens": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "screen_name": {"type": "string", "description": "The name of the UI screen."},
+                                    "sub_prompt": {"type": "string", "description": "A detailed prompt for generating this screen's content."}
+                                },
+                                "required": ["screen_name", "sub_prompt"],
+                                "additionalProperties": False
+                            }
+                        }
+                    },
+                    "required": ["screens"],
+                    "additionalProperties": False
+                }
+            }
+        }
         try:
             response = self.client.chat.completions.create(
                 model=self.model_name,
@@ -35,7 +52,7 @@ class  OpenAIProvider(LLMProvider):
                 temperature=self.config.temperature_options.default,
                 max_completion_tokens=self.config.max_tokens,
                 timeout=self.timeout,
-                response_format=ScreenList
+                response_format=response_schema
             )
             return response.choices[0].message.content
         except Exception as e:
