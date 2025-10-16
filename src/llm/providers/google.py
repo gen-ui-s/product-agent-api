@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 
 import google.genai as genai
 from google.genai.types import SafetySetting, HarmCategory, GenerateContentConfig
-
+from llm.providers.schemas import GEMINI_GENERATOR_SCHEMA
 from llm.providers.factory import LLMProvider
 from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedException
 from logs import logger
@@ -34,23 +34,6 @@ class GeminiProvider(LLMProvider):
             raise LLMAPIKeyMissingError("Google API key not configured")
 
         try:
-            response_schema = {
-                "type": "object",
-                "properties": {
-                    "screens": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "screen_name": {"type": "string"},
-                                "sub_prompt": {"type": "string"}
-                            },
-                            "required": ["screen_name", "sub_prompt"]
-                        }
-                    }
-                },
-                "required": ["screens"]
-            }
 
             safety_settings: List[SafetySetting] = [
                 {"category": HarmCategory.HARM_CATEGORY_HARASSMENT, "threshold": "BLOCK_NONE"},
@@ -65,7 +48,7 @@ class GeminiProvider(LLMProvider):
                 response_mime_type="application/json",
                 system_instruction=formatted_messages["system_instruction"],
                 safety_settings=safety_settings,
-                response_schema=response_schema
+                response_schema=GEMINI_GENERATOR_SCHEMA
             )
 
             
@@ -114,8 +97,9 @@ class AsyncGeminiProvider(LLMProvider):
             formatted_messages = _format_messages(messages)
 
             generation_config = GenerateContentConfig(
+                response_mime_type="application/json",
                 system_instruction=formatted_messages["system_instruction"],
-                safety_settings=safety_settings,
+                safety_settings=safety_settings
             )
 
             response = await self.async_client.models.generate_content(

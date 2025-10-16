@@ -52,10 +52,3 @@ class ComponentGenerationFailedException(Exception):
         self.message = message
         self.invalid_code = invalid_code
         super().__init__(self.message)
-
-class SVGInvalidException(Exception):
-    """SVGInvalidException is raised when the generated SVG content is not valid."""
-    def __init__(self, message: str, invalid_code: str):
-        self.message = message
-        self.invalid_code = invalid_code
-        super().__init__(self.message)

@@ -1,7 +1,7 @@
 from typing import List, Dict
 import os
-from pydantic import BaseModel
 from openai import OpenAI, AsyncOpenAI
+from llm.providers.schemas import OPEN_AI_GENERATOR_SCHEMA, OPEN_AI_COMPONENT_JSON_SCHEMA
 from llm.providers.factory import LLMProvider
 from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedException
 from logs import logger
@@ -18,33 +18,7 @@ class  OpenAIProvider(LLMProvider):
     def completion(self, messages: List[Dict[str, str]]) -> str:
         if not self.client:
             raise LLMAPIKeyMissingError("OpenAI API key not configured")
-            
-        response_schema = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "screen_generation_response",
-                "strict": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "screens": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "screen_name": {"type": "string", "description": "The name of the UI screen."},
-                                    "sub_prompt": {"type": "string", "description": "A detailed prompt for generating this screen's content."}
-                                },
-                                "required": ["screen_name", "sub_prompt"],
-                                "additionalProperties": False
-                            }
-                        }
-                    },
-                    "required": ["screens"],
-                    "additionalProperties": False
-                }
-            }
-        }
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model_name,
@@ -52,7 +26,7 @@ class  OpenAIProvider(LLMProvider):
                 temperature=self.config.temperature_options.default,
                 max_completion_tokens=self.config.max_tokens,
                 timeout=self.timeout,
-                response_format=response_schema
+                response_format=OPEN_AI_GENERATOR_SCHEMA
             )
             return response.choices[0].message.content
         except Exception as e:
@@ -82,7 +56,8 @@ class AsyncOpenAIProvider(LLMProvider):
                 messages=messages,
                 temperature=self.config.temperature_options.default,
                 max_completion_tokens=self.config.max_tokens,
-                timeout=self.timeout
+                timeout=self.timeout,
+                response_format=OPEN_AI_COMPONENT_JSON_SCHEMA
             )
             self.count += 1
             logger.info(f"AsyncOpenAI {self.count} response: {response}")

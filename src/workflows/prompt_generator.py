@@ -3,6 +3,7 @@ from models.db_models import Job
 from exceptions import PromptGenerationFailedException
 from llm.providers.factory import LLMFactory
 from workflows.config.prompts import PROMPT_GENERATOR_SYSTEM_PROMPT
+from workflows.config.design_systems import get_style_guide
 from logs import logger
 
 class PromptGenerator:
@@ -14,10 +15,13 @@ class PromptGenerator:
             logger.info("Generating screen prompts...")
             provider = LLMFactory.create_provider(self.job_data["model"])
             
+            design_system = self.job_data.get("design_system", "shadcn")
+            style_guide = get_style_guide(design_system)
+
             system_prompt = PROMPT_GENERATOR_SYSTEM_PROMPT.format(
                 screen_count=self.job_data["screen_count"],
                 generation_type=self.job_data["generation_type"],
-                style_guide="Minimalist, pastel colors, serene, modern. Use SHADCN desing system principles."#TODO add design system information here.
+                style_guide=style_guide
                 )
             messages = [
                 {"role": "system", "content": system_prompt},

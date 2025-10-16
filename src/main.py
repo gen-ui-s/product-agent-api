@@ -26,8 +26,7 @@ from exceptions import (
     ComponentStatusUpdateFailedException,
     JobNotFoundException,
     JobStatusUpdateFailedException,
-    PromptGenerationFailedException,
-    SVGInvalidException
+    PromptGenerationFailedException
 )
 from logs import logger
 import traceback
@@ -50,10 +49,6 @@ async def _generate_single_component(job_data: Job, prompt: str, provider: LLMPr
         logger.info(f"Successful component: {component_id}")
         return component
     
-    except SVGInvalidException as e:
-        logger.error(f"Component generation failed. Error: {e.message}")
-        raise ComponentGenerationFailedException(message=e.message, invalid_code=e.invalid_code)
-
     except Exception as e:
         logger.error(f"Component generation failed. Error: {str(e)}")
         raise ComponentGenerationFailedException(message=str(e), invalid_code=None)
