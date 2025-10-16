@@ -2,7 +2,7 @@ import os
 from typing import List, Dict, Any
 
 import google.genai as genai
-from google.genai.types import SafetySetting, HarmCategory, GenerateContentConfig, HttpOptions
+from google.genai.types import SafetySetting, HarmCategory, GenerateContentConfig
 
 from llm.providers.factory import LLMProvider
 from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedException
