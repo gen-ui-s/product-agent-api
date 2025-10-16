@@ -1,12 +1,21 @@
 from typing import List, Dict
 import os
+from pydantic import BaseModel
 from openai import OpenAI, AsyncOpenAI
 from llm.providers.factory import LLMProvider
 from exceptions import LLMAPIKeyMissingError, LLMProviderCompletionFailedException
 from logs import logger
 
-
 TIMEOUT = 120
+
+class Screen(BaseModel):
+    screen_name: str
+    sub_prompt: str
+
+class ScreenList(BaseModel):
+    steps: list[Screen]
+
+
 class  OpenAIProvider(LLMProvider):
     def __init__(self, model_name: str, config):
         self.api_key = os.environ.get("OPENAI_API_KEY")
@@ -25,7 +34,8 @@ class  OpenAIProvider(LLMProvider):
                 messages=messages,
                 temperature=self.config.temperature_options.default,
                 max_completion_tokens=self.config.max_tokens,
-                timeout=self.timeout
+                timeout=self.timeout,
+                response_format=ScreenList
             )
             return response.choices[0].message.content
         except Exception as e:
