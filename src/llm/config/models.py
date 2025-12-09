@@ -68,7 +68,7 @@ class LLMAvailableModels(Enum):
     )
 
     GEMINI_3_PRO = LLMModelConfig(
-        name="gemini-3-pro",
+        name="gemini-3-pro-preview",
         description="Google Gemini 3 Pro model",
         max_tokens=64000,
         temperature_options=TemperatureOptions(
