@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from typing import Optional
-from job_config import JobStatus, ComponentStatus, AvailablePlatforms,  GenerationType
+from typing import Optional, Dict
+from job_config import JobStatus, ComponentStatus, AvailablePlatforms, GenerationType, DeviceSize, AvailableDeviceSizes
 
 @dataclass 
 class User:
@@ -36,9 +36,10 @@ class Job:
     status: JobStatus
     screen_count: int
     model: str
-    platform: AvailablePlatforms
+    device: AvailableDeviceSizes
     generation_type: GenerationType
     created_at: str
+    platform: Optional[AvailablePlatforms] = None
     optimized_prompt: Optional[str] = None
     completed_at: Optional[str] = None
     error_message: Optional[str] = None
@@ -51,6 +52,7 @@ class Job:
             "status": self.status,
             "screen_count": self.screen_count,
             "model": self.model,
+            "device": self.device.value.__dict__ if isinstance(self.device, AvailableDeviceSizes) else self.device,
             "platform": self.platform,
             "generation_type": self.generation_type,
             "optimized_prompt": self.optimized_prompt,
