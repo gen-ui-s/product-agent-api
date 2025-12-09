@@ -59,13 +59,22 @@ class LLMAvailableModels(Enum):
 
     GEMINI_2_5_PRO =  LLMModelConfig(
         name="gemini-2.5-pro",
-        description="Google Gemini 2" \
-        ".5 Pro model",
+        description="Google Gemini 2.5 Pro model",
         max_tokens=10000,
         temperature_options=TemperatureOptions(
             default=0.7,
             creative=1.0
        )
+    )
+
+    GEMINI_3_PRO = LLMModelConfig(
+        name="gemini-3-pro-preview",
+        description="Google Gemini 3 Pro model",
+        max_tokens=64000,
+        temperature_options=TemperatureOptions(
+            default=0.7,
+            creative=1.0
+        )
     )
 
     @classmethod
