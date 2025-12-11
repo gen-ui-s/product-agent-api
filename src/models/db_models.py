@@ -52,7 +52,7 @@ class Job:
             "status": self.status,
             "screen_count": self.screen_count,
             "model": self.model,
-            "device": self.device
+            "device": self.device,
             "platform": self.platform,
             "generation_type": self.generation_type,
             "optimized_prompt": self.optimized_prompt,
