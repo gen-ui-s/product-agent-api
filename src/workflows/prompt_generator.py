@@ -2,8 +2,9 @@ import json
 from models.db_models import Job
 from exceptions import PromptGenerationFailedException
 from llm.providers.factory import LLMFactory
-from workflows.config.prompts import PROMPT_GENERATOR_SYSTEM_PROMPT
-from workflows.config.design_systems import get_style_guide
+from workflows.prompts.prompt_gen import PROMPT_ENHANCER, INFORMATION_ARCHITECTURE, SCREEN_SUB_PROMPT_GENERATOR_AGENT
+from workflows.prompts.general import JSON_RULES_SNIPPET, UX_LAWS_SNIPPET
+from job_config import AvailableDeviceSizes
 from logs import logger
 
 class PromptGenerator:
@@ -12,24 +13,97 @@ class PromptGenerator:
     
     def run(self):            
         try:
-            logger.info("Generating screen prompts...")
+            logger.info("Starting Chained Planning Phase...")
             provider = LLMFactory.create_provider(self.job_data["model"])
             
-            design_system = self.job_data.get("design_system", "shadcn")
-            style_guide = get_style_guide(design_system)
+            # 0. Setup Context
+            user_prompt = self.job_data["user_prompt"]
+            screen_count = self.job_data["screen_count"]
+            generation_type = self.job_data["generation_type"]
+            # Detect device size or default
+            device_name = self.job_data.get("device", "Desktop")
+            try:
+                device_enum = AvailableDeviceSizes.get_device_by_name(device_name)
+                # Dump device info as JSON
+                device_info = json.dumps({
+                    "name": device_enum.name,
+                    "width": device_enum.width,
+                    "height": device_enum.height,
+                    "corner_radius": device_enum.corner_radius
+                }, indent=2)
+            except ValueError:
+                 device_info = json.dumps({
+                    "name": "Desktop",
+                    "width": 1440,
+                    "height": 1024,
+                    "corner_radius": 0
+                 }, indent=2)
 
-            system_prompt = PROMPT_GENERATOR_SYSTEM_PROMPT.format(
-                screen_count=self.job_data["screen_count"],
-                generation_type=self.job_data["generation_type"],
-                style_guide=style_guide
-                )
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": self.job_data["user_prompt"]}
-            ]
+            # ------------------------------------------------------------------
+            # STEP 1: PROMPT ENHANCER
+            # ------------------------------------------------------------------
+            logger.info("Step 1: Enhancing User Prompt...")
+            enhancer_system = PROMPT_ENHANCER.format(
+                json_rules=JSON_RULES_SNIPPET,
+                ux_laws=UX_LAWS_SNIPPET,
+                device_info=device_info
+            )
             
-            response = provider.completion(messages=messages)
+            msgs_1 = [
+                {"role": "system", "content": enhancer_system},
+                {"role": "user", "content": user_prompt}
+            ]
+            resp_1_str = provider.completion(messages=msgs_1)
+            brief_json = json.loads(resp_1_str)
+            logger.info("Prompt Enhanced successfully.")
+
+            # ------------------------------------------------------------------
+            # STEP 2: INFORMATION ARCHITECTURE
+            # ------------------------------------------------------------------
+            logger.info("Step 2: Designing Information Architecture...")
+            ia_system = INFORMATION_ARCHITECTURE.format(
+                json_rules=JSON_RULES_SNIPPET,
+                ux_laws=UX_LAWS_SNIPPET
+            )
+            # Pass the enhanced brief as input
+            msgs_2 = [
+                {"role": "system", "content": ia_system},
+                {"role": "user", "content": json.dumps(brief_json, indent=2)}
+            ]
+            resp_2_str = provider.completion(messages=msgs_2)
+            sitemap_json = json.loads(resp_2_str)
+            logger.info(f"Sitemap generated with {len(sitemap_json.get('screens', []))} screens.")
+
+            # ------------------------------------------------------------------
+            # STEP 3: SUB-PROMPT GENERATOR
+            # ------------------------------------------------------------------
+            logger.info("Step 3: Generating Screen Sub-Prompts...")
+            sub_gen_system = SCREEN_SUB_PROMPT_GENERATOR_AGENT.format(
+                json_rules=JSON_RULES_SNIPPET,
+                ux_laws=UX_LAWS_SNIPPET
+            )
+            
+            # Prepare input for sub-prompter
+            sub_gen_input = {
+                **sitemap_json,  # merge sitemap details
+                "generation_type": generation_type,
+                "screen_count": screen_count
+            }
+
+            msgs_3 = [
+                {"role": "system", "content": sub_gen_system},
+                {"role": "user", "content": json.dumps(sub_gen_input, indent=2)}
+            ]
+            resp_3_str = provider.completion(messages=msgs_3)
+            final_prompts_json = json.loads(resp_3_str)
+            
+            # Return both key artifacts: the detailed sub-prompts AND the sitemap context
+            # (The workflow orchestrator will need to pass the sitemap to ComponentGenerator)
+            return {
+                "sub_prompts": final_prompts_json,
+                "sitemap": sitemap_json
+            }
+
         except Exception as e:
-            raise PromptGenerationFailedException(f"Failed to create generation sub-prompts: {str(e)}")            
-        
-        return json.loads(response)   
+            logger.error(f"Planning Phase Failed: {str(e)}")
+            raise PromptGenerationFailedException(f"Failed to execute planning chain: {str(e)}")   
