@@ -113,7 +113,7 @@ def run(job_id: str):
         update_job_optimized_prompt(db, job_id, str(components_prompts))
         bulk_update_component_status(db, job_component_ids, ComponentStatus.RUNNING)
 
-        generation_results: dict = asyncio.run(generate_components_concurrently(job_data, components_prompts["screens"]))
+        generation_results: dict = asyncio.run(generate_components_concurrently(job_data, components_prompts["sub_prompts"]["screens"]))
 
         successful_component_count = save_generation_results_to_db(db, job_components, generation_results)
         update_job_status(db, job_id, JobStatus.COMPLETED)

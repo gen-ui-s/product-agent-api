@@ -53,3 +53,22 @@ class AvailableDeviceSizes(Enum):
     TV = DeviceSize(width=1280, height=720, corner_radius=24, name="TV")
     SLIDE_16_9 = DeviceSize(width=1920, height=1080, corner_radius=24, name="Slide 16:9")
     SLIDE_4_3 = DeviceSize(width=1024, height=768, corner_radius=24, name="Slide 4:3")
+   
+    @classmethod
+    def get_device_names(cls):
+        return {
+            device.value.name: {
+                "width": device.value.width,
+                "height": device.value.height,
+                "corner_radius": device.value.corner_radius,
+                "platform": device.value.platform
+            }
+            for device in cls
+        }
+
+    @classmethod
+    def get_device_by_name(cls, name: str) -> DeviceSize:
+        for device in cls:
+            if device.value.name == name:
+                return device.value
+        raise ValueError(f"Device with name '{name}' not found.")

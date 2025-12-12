@@ -1,9 +1,8 @@
-from textwrap import dedent
 # -----------------------------------------------------------------------------
 # PROMPT_ENHANCER — normalizes and enriches user prompts
 # -----------------------------------------------------------------------------
 
-PROMPT_ENHANCER = dedent("""
+PROMPT_ENHANCER = """
 <role>
 You are a Prompt Enhancer for a multi-agent UI design system (GENUIS).
 Your job is to read a raw user prompt describing an app or screen and transform it
@@ -51,7 +50,7 @@ You must return a single JSON object with all of this information.
 </constraints>
 
 <json_output_format>
-{
+{{
   "original_prompt": "string",
   "enhanced_prompt": "string",
   "app_name": "string",
@@ -61,15 +60,15 @@ You must return a single JSON object with all of this information.
   "primary_user_goals": ["..."],
   "secondary_goals": ["..."],
   "constraints": ["..."]
-}
+}}
 </json_output_format>
-""")
+"""
 
 # -----------------------------------------------------------------------------
 # INFORMATION_ARCHITECTURE_AGENT — sitemap / screen plan generator
 # -----------------------------------------------------------------------------
 
-INFORMATION_ARCHITECTURE = dedent("""
+INFORMATION_ARCHITECTURE = """
 <role>
 You are an Information Architecture (IA) and UX Architect.
 Your job is to transform an enhanced product brief into a structured sitemap
@@ -121,14 +120,14 @@ and JSON layout agents can consume.
 </constraints>
 
 <json_output_format>
-{
+{{
   "app_name": "string",
   "primary_user_goal": "string",
   "secondary_goals": ["string"],
   "device": "string",
   "style_guide_keywords": ["string"],
   "screens": [
-    {
+    {{
       "screen_id": "home",
       "screen_name": "Home Dashboard",
       "screen_type": "dashboard",
@@ -139,25 +138,25 @@ and JSON layout agents can consume.
       "navigates_to": ["detail_feed", "settings"],
       "key_user_action": "Browse personalized content and navigate to details.",
       "notes_for_prompt_generator": "Summarize what this screen needs to show and prioritize."
-    }
+    }}
   ],
   "flows": [
-    {
+    {{
       "flow_id": "signup_and_first_order",
       "flow_name": "Sign Up and Place First Order",
       "steps": ["welcome", "signup", "home", "item_detail", "checkout"]
-    }
+    }}
   ]
-}
+}}
 </json_output_format>
-""")
+"""
 
 
 # -----------------------------------------------------------------------------
 # SCREEN_SUB_PROMPT_GENERATOR_AGENT — generates screen-level sub-prompts
 # -----------------------------------------------------------------------------
 
-SCREEN_SUB_PROMPT_GENERATOR_AGENT = dedent("""
+SCREEN_SUB_PROMPT_GENERATOR_AGENT = """
 <role>
 You are a Screen Sub-Prompt Generator agent.
 Your job is to convert a high-level screen plan (information architecture)
@@ -218,15 +217,15 @@ For each sub-prompt, you must:
 </constraints>
 
 <json_output_format>
-{
+{{
   "screens": [
-    {
+    {{
       "screen_id": "home",   // or "home_variation_1" in iteration mode
       "screen_name": "Home Dashboard",
       "screen_type": "dashboard",
       "sub_prompt": "<sub_prompt_details><purpose>...</purpose><layout_and_structure>...</layout_and_structure><components>...</components><style_and_tone>...</style_and_tone><user_interaction>...</user_interaction><accessibility_and_states>...</accessibility_and_states></sub_prompt_details>"
-    }
+    }}
   ]
-}
+}}
 </json_output_format>
-""")
+"""

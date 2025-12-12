@@ -60,8 +60,8 @@ class AsyncComponentGenerator:
 
         # 3. Format System Prompt with Snippets and Device Info
         formatted_system_prompt = self.base_system_prompt.format(
-            json_rules=JSON_RULES_SNIPPET,
-            ux_laws=UX_LAWS_SNIPPET,
+            JSON_RULES_SNIPPET=JSON_RULES_SNIPPET,
+            UX_LAWS_SNIPPET=UX_LAWS_SNIPPET,
             device_specs=device_specs_str
         )
 

@@ -4,8 +4,9 @@
 # -----------------------------------------------------------------------------
 # JSON_UI_GENERATOR_SYSTEM_PROMPT — unified single/multi-screen JSON generator
 # -----------------------------------------------------------------------------
+# vars {device_specs, JSON_RULES_SNIPPET, UX_LAWS_SNIPPET}
 
-JSON_UI_GENERATOR_SYSTEM_PROMPT = dedent(f"""
+JSON_UI_GENERATOR_SYSTEM_PROMPT = """
 <role>
 You are an expert UI/UX designer and JSON author for a JSON-to-Design plugin.
 Your job is to translate structured prompts into valid JSON node trees that the
@@ -166,82 +167,70 @@ For each requested screen:
 </constraints>
 
 <json_output_format>
-{
+{{
   "screens": [
-    {
+    {{
       "screen_id": "home",
       "screen_name": "Home",
       "screen_type": "dashboard",
-      "node": {
+      "node": {{
         "type": "frame",
         "name": "Home",
-        "size": { "width": 1440, "height": 1024 },
-        "layout": {
+        "size": {{ "width": 1440, "height": 1024 }},
+        "layout": {{
           "direction": "vertical",
           "gap": 16,
           "padding": 24,
           "align": "top-left"
-        },
-        "style": {
+        }},
+        "style": {{
           "fill": "#0B1220"
-        },
+        }},
         "children": [
-          {
+          {{
             "type": "frame",
             "name": "Status Bar",
-            "size": { "width": "fill", "height": 44 },
-            "layout": {
+            "size": {{ "width": "fill", "height": 44 }},
+            "layout": {{
               "direction": "horizontal",
               "gap": 8,
               "padding": 12,
               "align": "center"
-            },
-            "style": { "fill": "#020617" },
+            }},
+            "style": {{ "fill": "#020617" }},
             "children": []
-          },
-          {
+          }},
+          {{
             "type": "frame",
             "name": "Main Content",
-            "size": { "width": "fill", "height": "fill" },
-            "layout": {
+            "size": {{ "width": "fill", "height": "fill" }},
+            "layout": {{
               "direction": "vertical",
               "gap": 12,
               "padding": 16,
               "align": "top-left"
-            },
-            "style": { "fill": "#020617" },
+            }},
+            "style": {{ "fill": "#020617" }},
             "children": []
-          },
-          {
+          }},
+          {{
             "type": "frame",
             "name": "Nav Bar",
-            "size": { "width": "fill", "height": 64 },
-            "layout": {
+            "size": {{ "width": "fill", "height": 64 }},
+            "layout": {{
               "direction": "horizontal",
               "gap": 24,
               "padding": 12,
               "align": "center",
               "justify": "space-between"
-            },
-            "style": { "fill": "#020617" },
+            }},
+            "style": {{ "fill": "#020617" }},
             "children": []
-          }
+          }}
         ]
-      }
-    }
+      }}
+    }}
   ]
-}
+}}
 </json_output_format>
-""")
-
-__all__ = [
-    "DEVICE_SIZES",
-    "DEVICE_SIZES_TABLE",
-    "JSON_RULES_SNIPPET",
-    "UX_LAWS_SNIPPET",
-    "PROMPT_ENHANCER",
-    "INFORMATION_ARCHITECTURE_AGENT",
-    "SCREEN_SUB_PROMPT_GENERATOR_AGENT",
-    "JSON_UI_GENERATOR_SYSTEM_PROMPT",
-]
 """

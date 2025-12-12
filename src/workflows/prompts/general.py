@@ -782,7 +782,7 @@ Use the frame example from §2.1; add list items as children with `wrap` if need
 # Laws of UX snippet (actionable)
 # -----------------------------------------------------------------------------
 
-UX_LAWS_SNIPPET = dedent("""
+UX_LAWS_SNIPPET = """
 <ux_laws>
 You must apply the following UX laws, adapted from the Laws of UX collection, when designing layouts, interactions, grouping, and hierarchy. These are design constraints, not suggestions.
 
@@ -913,5 +913,5 @@ For each screen you generate:
 - People remember unfinished tasks more than completed ones.
 - Application: Surface incomplete tasks, drafts, and partial setups. Provide clear paths to resume and complete them, and gentle reminders where appropriate.
 </ux_laws>
-""")
+"""
 

@@ -21,7 +21,10 @@ class PromptGenerator:
             screen_count = self.job_data["screen_count"]
             generation_type = self.job_data["generation_type"]
             # Detect device size or default
-            device_name = self.job_data.get("device", "Desktop")
+            logger.info(self.job_data.get('device', {"name": "Desktop"}))
+            device = self.job_data.get("device", {"name": "Desktop"})
+            device_name = device["name"]
+            logger.info(device_name)
             try:
                 device_enum = AvailableDeviceSizes.get_device_by_name(device_name)
                 # Dump device info as JSON
@@ -46,7 +49,7 @@ class PromptGenerator:
             enhancer_system = PROMPT_ENHANCER.format(
                 json_rules=JSON_RULES_SNIPPET,
                 ux_laws=UX_LAWS_SNIPPET,
-                device_info=device_info
+                device_info=str(device_info)
             )
             
             msgs_1 = [
