@@ -38,7 +38,6 @@ You must return a single JSON object with all of this information.
    - Your ENTIRE response MUST be a valid JSON object.
    - Do NOT include markdown, comments, backticks, or explanations.
 2. Required fields:
-   - "original_prompt": the user text verbatim.
    - "enhanced_prompt": a rewritten, clearer version optimized for design agents.
    - "app_name": short, human-friendly name or generic fallback (e.g., "Coffee Ordering App").
    - "summary": one short paragraph summarizing the product.
@@ -51,7 +50,6 @@ You must return a single JSON object with all of this information.
 
 <json_output_format>
 {{
-  "original_prompt": "string",
   "enhanced_prompt": "string",
   "app_name": "string",
   "summary": "string",

@@ -11,7 +11,7 @@ from db.job_utils import (
     find_job_by_id,
     find_job_components,
     update_job_status,
-    update_job_optimized_prompt,
+    update_job_planning,
     bulk_update_component_status,
     update_component_with_result,
     consume_user_credits
@@ -68,12 +68,11 @@ async def generate_components_concurrently(job_data: Job, component_prompts: Lis
     return results
 
 
-def save_generation_results_to_db(db, job_components: List[dict], generation_results: List):
+def save_generation_results_to_db(db, job_components: List[dict], generation_results: List, current_time: str):
     """Save generation results to database and update component statuses"""
     if len(job_components) != len(generation_results):
         raise ComponentGeneratedLengthMismatchException(f"Mismatch between job components ({len(job_components)}) and generation results ({len(generation_results)})")
 
-    current_time = datetime.now().isoformat()
     successful_component_count = 0
 
     for db_component, result in zip(job_components, generation_results):
@@ -109,14 +108,15 @@ def run(job_id: str):
         update_job_status(db, job_id, JobStatus.RUNNING)
         job_components = find_job_components(db, job_id)
         job_component_ids = [c["_id"] for c in job_components]
-        components_prompts: List[str] = generate_component_prompts(job_data)
-        update_job_optimized_prompt(db, job_id, str(components_prompts))
+        components_prompts: dict = generate_component_prompts(job_data)
+        update_job_planning(db, job_id, components_prompts)
         bulk_update_component_status(db, job_component_ids, ComponentStatus.RUNNING)
 
         generation_results: dict = asyncio.run(generate_components_concurrently(job_data, components_prompts["sub_prompts"]["screens"]))
 
-        successful_component_count = save_generation_results_to_db(db, job_components, generation_results)
-        update_job_status(db, job_id, JobStatus.COMPLETED)
+        current_time = datetime.now().isoformat()
+        successful_component_count = save_generation_results_to_db(db, job_components, generation_results, current_time)
+        update_job_status(db, job_id, JobStatus.COMPLETED, current_time)
         consume_user_credits(db, job_data["user_id"], successful_component_count)
 
     except (PromptGenerationFailedException, ComponentGeneratedLengthMismatchException) as e:

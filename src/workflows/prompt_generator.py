@@ -103,8 +103,9 @@ class PromptGenerator:
             # Return both key artifacts: the detailed sub-prompts AND the sitemap context
             # (The workflow orchestrator will need to pass the sitemap to ComponentGenerator)
             return {
+                "optimiced_prompt": brief_json,
+                "information_architecture": sitemap_json,
                 "sub_prompts": final_prompts_json,
-                "sitemap": sitemap_json
             }
 
         except Exception as e:

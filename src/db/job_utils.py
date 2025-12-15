@@ -58,11 +58,17 @@ def find_job_components(db: Dict, job_id: str) -> List[Dict[str, Any]]:
     return component_docs
 
 
-def update_job_status(db: Dict, job_id: str, new_status: JobStatus) -> Dict:
+def update_job_status(db: Dict, job_id: str, new_status: JobStatus, completed_at: Optional[str] = None) -> Dict:
+    
     try:
+        update_body  = {"status": new_status.value}
+
+        if completed_at:
+            update_body["completed_at"] = completed_at
+
         result = db["generation_jobs"].update_one(
             {"_id": job_id},
-            {"$set": {"status": new_status.value}}
+            {"$set": update_body}
         )
     except Exception as e:
         raise DatabaseQueryFailedException(f"Database query failed: {e}")
@@ -72,11 +78,11 @@ def update_job_status(db: Dict, job_id: str, new_status: JobStatus) -> Dict:
 
     return result
 
-def update_job_optimized_prompt(db: Dict, job_id: str, optimized_prompt: List[str]) -> Dict:
+def update_job_planning(db: Dict, job_id: str, plan_objects: dict) -> Dict:
     try:
         result = db["generation_jobs"].update_one(
             {"_id": job_id},
-            {"$set": {"optimized_prompt": optimized_prompt}}
+            {"$set": {"optimized_prompt": plan_objects["optimiced_prompt"], "information_architecture": plan_objects["information_architecture"]}}
         )   
 
     except Exception as e:

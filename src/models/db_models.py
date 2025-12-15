@@ -41,6 +41,7 @@ class Job:
     created_at: str
     platform: Optional[AvailablePlatforms] = None
     optimized_prompt: Optional[str] = None
+    information_architecture: Optional[str] = None
     completed_at: Optional[str] = None
     error_message: Optional[str] = None
     
@@ -56,6 +57,7 @@ class Job:
             "platform": self.platform,
             "generation_type": self.generation_type,
             "optimized_prompt": self.optimized_prompt,
+            "information_architecture": self.information_architecture,
             "created_at": self.created_at,
             "completed_at": self.completed_at,
             "error_message": self.error_message
