@@ -106,7 +106,7 @@ def bulk_update_component_status(db: Dict, component_ids: List[str], new_status:
 
     return result
 
-def update_component_with_result(db: Dict, component_id: str, status: ComponentStatus, code: str = None, error_message: str = None, completed_at: str = None) -> bool:
+def update_component_with_result(db: Dict, component_id: str, status: ComponentStatus, code: str = None, sub_prompt: str = None, error_message: str = None, completed_at: str = None) -> bool:
     try:
         update_data = {"status": status.value}
         if code is not None:

@@ -6,7 +6,6 @@ from typing import List, Optional, Dict
 from exceptions import LLMProviderCompletionFailedException
 from models.request_models import Component
 from llm.providers.factory import LLMProvider
-# Import valid Prompt Templates and Snippets
 from workflows.prompts.component_gen import JSON_UI_GENERATOR_SYSTEM_PROMPT
 from workflows.prompts.general import JSON_RULES_SNIPPET, UX_LAWS_SNIPPET
 from job_config import AvailableDeviceSizes, DeviceSize
@@ -98,7 +97,8 @@ class AsyncComponentGenerator:
 
         component = Component(
             id=str(uuid.uuid4()),
-            code=normalized_code
+            code=normalized_code,
+            sub_prompt=self.user_prompt
         )
 
         return component

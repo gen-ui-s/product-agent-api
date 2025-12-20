@@ -77,6 +77,16 @@ class LLMAvailableModels(Enum):
         )
     )
 
+    GEMINI_3_FLASH = LLMModelConfig(
+        name="gemini-3-flash-preview",
+        description="Google Gemini 3 Flash model",
+        max_tokens=64000,
+        temperature_options=TemperatureOptions(
+            default=0.7,
+            creative=1.0
+        )
+    )
+
     @classmethod
     def get_model_names(cls):
         return [model.value.name for model in cls]

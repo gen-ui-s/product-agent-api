@@ -4,7 +4,6 @@ from typing import List
 from datetime import datetime
 
 from aws.db_connection import get_db
-from models.request_models import Component
 from workflows.prompt_generator import PromptGenerator
 from workflows.component_generator import AsyncComponentGenerator
 from db.job_utils import (
@@ -83,6 +82,7 @@ def save_generation_results_to_db(db, job_components: List[dict], generation_res
                 component_id=db_component['_id'],
                 status=ComponentStatus.FAILED,
                 code=getattr(result, 'invalid_code', None),
+                sub_prompt=getattr(result, 'sub_prompt', None),
                 error_message=result.message,
                 completed_at=current_time
             )
@@ -93,6 +93,7 @@ def save_generation_results_to_db(db, job_components: List[dict], generation_res
                 component_id=db_component['_id'],
                 status=ComponentStatus.SUCCESSFUL,
                 code=result.code,
+                sub_prompt=getattr(result, 'sub_prompt', None),
                 completed_at=current_time
             )
             successful_component_count += 1
