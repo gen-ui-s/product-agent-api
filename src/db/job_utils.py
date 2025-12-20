@@ -82,7 +82,7 @@ def update_job_planning(db: Dict, job_id: str, plan_objects: dict) -> Dict:
     try:
         result = db["generation_jobs"].update_one(
             {"_id": job_id},
-            {"$set": {"optimized_prompt": plan_objects["optimiced_prompt"], "information_architecture": plan_objects["information_architecture"]}}
+            {"$set": {"optimized_prompt": plan_objects["optimized_prompt"], "information_architecture": plan_objects["information_architecture"]}}
         )   
 
     except Exception as e:
@@ -91,11 +91,26 @@ def update_job_planning(db: Dict, job_id: str, plan_objects: dict) -> Dict:
     if result.matched_count <= 0:
         raise JobPromptUpdateFailedException(f"Failed to update job prompt: No job modified")
 
+def update_component_planning(db: Dict, component_id: str, status: ComponentStatus, sub_prompt: str) -> bool:
+    try:
+        result = db["generated_components"].update_one(
+            {"_id": component_id},
+            {"$set": {"status": status.value, "sub_prompt": sub_prompt}}
+        )
+
+    except Exception as e:
+        raise DatabaseQueryFailedException(f"Database query failed: {e}")
+
+    if result.matched_count <= 0:
+        raise ComponentStatusUpdateFailedException(f"Failed to update component planning: No component modified")
+
+    return True
+
 def bulk_update_component_status(db: Dict, component_ids: List[str], new_status: ComponentStatus) -> int:
     try:
         result = db["generated_components"].update_many(
             {"_id": {"$in": component_ids}},
-            {"$set": {"status": new_status}}
+            {"$set": {"status": new_status.value}}
         )
 
     except Exception as e:
@@ -104,7 +119,7 @@ def bulk_update_component_status(db: Dict, component_ids: List[str], new_status:
     if result.matched_count < len(component_ids):
         raise ComponentStatusUpdateFailedException(f"Failed to update all components")
 
-    return result
+    return result.matched_count
 
 def update_component_with_result(db: Dict, component_id: str, status: ComponentStatus, code: str = None, sub_prompt: str = None, error_message: str = None, completed_at: str = None) -> bool:
     try:
@@ -113,6 +128,8 @@ def update_component_with_result(db: Dict, component_id: str, status: ComponentS
             update_data["code"] = code
         if error_message is not None:
             update_data["error_message"] = error_message
+        if sub_prompt is not None:
+            update_data["sub_prompt"] = sub_prompt
         if completed_at is not None:
             update_data["completed_at"] = completed_at
 
@@ -124,8 +141,8 @@ def update_component_with_result(db: Dict, component_id: str, status: ComponentS
     except Exception as e:
         raise DatabaseQueryFailedException(f"Database query failed: {e}")
 
-    if result.modified_count < 0:
-        raise ComponentStatusUpdateFailedException(f"Failed to update component with result: {str(e)}")
+    if result.matched_count <= 0:
+        raise ComponentStatusUpdateFailedException(f"Failed to update component with result: No component modified")
 
     return result
 

@@ -11,6 +11,7 @@ from db.job_utils import (
     find_job_components,
     update_job_status,
     update_job_planning,
+    update_component_planning,
     bulk_update_component_status,
     update_component_with_result,
     consume_user_credits
@@ -50,7 +51,7 @@ async def _generate_single_component(job_data: Job, prompt: str, provider: LLMPr
     
     except Exception as e:
         logger.error(f"Component generation failed. Error: {str(e)}")
-        raise ComponentGenerationFailedException(message=str(e), invalid_code=None)
+        raise ComponentGenerationFailedException(message=str(e), invalid_code=None, sub_prompt=prompt)
     
 
 async def generate_components_concurrently(job_data: Job, component_prompts: List[str]) -> dict:
@@ -111,7 +112,10 @@ def run(job_id: str):
         job_component_ids = [c["_id"] for c in job_components]
         components_prompts: dict = generate_component_prompts(job_data)
         update_job_planning(db, job_id, components_prompts)
-        bulk_update_component_status(db, job_component_ids, ComponentStatus.RUNNING)
+
+        # Update each component with its newly generated sub_prompt and set status to RUNNING
+        for db_component, prompt_data in zip(job_components, components_prompts["sub_prompts"]["screens"]):
+            update_component_planning(db, db_component["_id"], ComponentStatus.RUNNING, prompt_data["sub_prompt"])
 
         generation_results: dict = asyncio.run(generate_components_concurrently(job_data, components_prompts["sub_prompts"]["screens"]))
 

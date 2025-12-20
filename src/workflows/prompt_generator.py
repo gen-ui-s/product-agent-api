@@ -103,11 +103,11 @@ class PromptGenerator:
             # Return both key artifacts: the detailed sub-prompts AND the sitemap context
             # (The workflow orchestrator will need to pass the sitemap to ComponentGenerator)
             return {
-                "optimiced_prompt": str(brief_json),
+                "optimized_prompt": str(brief_json),
                 "information_architecture": str(sitemap_json),
                 "sub_prompts": final_prompts_json,
             }
 
         except Exception as e:
             logger.error(f"Planning Phase Failed: {str(e)}")
-            raise PromptGenerationFailedException(f"Failed to execute planning chain: {str(e)}")   
+            raise PromptGenerationFailedException(f"Failed to execute planning chain: {str(e)}")
