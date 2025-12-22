@@ -48,6 +48,10 @@ Parameters:
     Description: Google API Key for Gemini
     NoEcho: true
     Default: sk-dummy-google-api-key
+  AWSS3Bucket: 
+    Type: String
+    Description: S3 bucket name for image storage
+    Default: genuis-images-dev
 
 
 Resources:
@@ -89,6 +93,7 @@ Resources:
           DB_USERNAME: !Ref DBUsername
           DB_PASSWORD: !Ref DBPassword
           DATABASE_URI: !Ref DatabaseUri
+          AWS_S3_BUCKET: !Ref AWSS3Bucket
       Layers:
         - !Ref DependenciesLayer
       Events:
