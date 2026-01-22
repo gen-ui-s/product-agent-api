@@ -21,7 +21,8 @@ class LLMFactory:
         LLMAvailableModels.GPT_o3.value.name: {"class": OpenAIProvider, "config": LLMAvailableModels.GPT_o3.value},
         LLMAvailableModels.GPT_o4_MINI.value.name: {"class": OpenAIProvider, "config": LLMAvailableModels.GPT_o4_MINI.value},
         LLMAvailableModels.GEMINI_2_5_PRO.value.name: {"class": GeminiProvider, "config": LLMAvailableModels.GEMINI_2_5_PRO.value},
-        LLMAvailableModels.GEMINI_3_PRO.value.name: {"class": GeminiProvider, "config": LLMAvailableModels.GEMINI_3_PRO.value}
+        LLMAvailableModels.GEMINI_3_PRO.value.name: {"class": GeminiProvider, "config": LLMAvailableModels.GEMINI_3_PRO.value},
+        LLMAvailableModels.GEMINI_3_FLASH.value.name: {"class": GeminiProvider, "config": LLMAvailableModels.GEMINI_3_FLASH.value}
     }
 
     _async_providers = {
@@ -30,7 +31,8 @@ class LLMFactory:
         LLMAvailableModels.GPT_o4_MINI.value.name: {"class": AsyncOpenAIProvider, "config": LLMAvailableModels.GPT_o4_MINI.value},
         LLMAvailableModels.GPT_5_MINI.value.name: {"class": AsyncOpenAIProvider, "config": LLMAvailableModels.GPT_5_MINI.value},
         LLMAvailableModels.GEMINI_2_5_PRO.value.name: {"class": AsyncGeminiProvider, "config": LLMAvailableModels.GEMINI_2_5_PRO.value},
-        LLMAvailableModels.GEMINI_3_PRO.value.name: {"class": AsyncGeminiProvider, "config": LLMAvailableModels.GEMINI_3_PRO.value}
+        LLMAvailableModels.GEMINI_3_PRO.value.name: {"class": AsyncGeminiProvider, "config": LLMAvailableModels.GEMINI_3_PRO.value},
+        LLMAvailableModels.GEMINI_3_FLASH.value.name: {"class": AsyncGeminiProvider, "config": LLMAvailableModels.GEMINI_3_FLASH.value}
     }
 
     @classmethod

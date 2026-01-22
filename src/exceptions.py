@@ -1,3 +1,6 @@
+class DeviceSizeNotFoundException(Exception):
+    """DeviceSizeNotFoundException is raised when a device size is not found."""
+
 class DatabaseConnectionError(Exception):
     """Exception raised for errors in the database connection."""
 
@@ -48,7 +51,8 @@ class ComponentStatusUpdateFailedException(Exception):
 
 class ComponentGenerationFailedException(Exception):
     """ComponentGenerationException is raised for errors during component generation."""
-    def __init__(self, message: str, invalid_code: str):
+    def __init__(self, message: str, invalid_code: str = None, sub_prompt: str = None):
         self.message = message
         self.invalid_code = invalid_code
+        self.sub_prompt = sub_prompt
         super().__init__(self.message)

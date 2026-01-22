@@ -71,14 +71,28 @@ class GeminiProvider(LLMProvider):
 
     def is_available(self) -> bool:
         return self.client
+        
+    def close(self):
+        """Closes the underlying client session if applicable."""
+        if self.client and hasattr(self.client, "close"):
+            try:
+                self.client.close()
+            except Exception as e:
+                logger.warning(f"Failed to close Gemini sync client: {e}")
     
 
 class AsyncGeminiProvider(LLMProvider):
     def __init__(self, model_name: str, config: Any):
         self.api_key = os.environ.get("GOOGLE_API_KEY")
-        self.async_client = genai.Client(api_key=self.api_key).aio if self.api_key else None
         self.model_name = model_name
         self.config = config
+        
+        if self.api_key:
+            self.client = genai.Client(api_key=self.api_key)
+            self.async_client = self.client.aio
+        else:
+            self.client = None
+            self.async_client = None
 
 
     async def completion(self, messages: List[Dict[str, str]]) -> str:
@@ -138,3 +152,31 @@ class AsyncGeminiProvider(LLMProvider):
 
     def is_available(self) -> bool:
         return self.async_client
+        
+    async def close(self):
+        """Closes the underlying client session."""
+        try:
+            if self.async_client:
+                # Attempt to find the underlying aiohttp session hidden in the client
+                # Structure found via inspection: async_client._api_client._aiohttp_session
+                if hasattr(self.async_client, "_api_client"):
+                    api_client = self.async_client._api_client
+                    if hasattr(api_client, "_aiohttp_session") and api_client._aiohttp_session:
+                        await api_client._aiohttp_session.close()
+                
+                # Also try standard close if it exists (it returned False in inspection but good practice)
+                if hasattr(self.async_client, "close"):
+                    await self.async_client.close()
+
+        except Exception as e:
+            logger.warning(f"Error during AsyncGeminiProvider cleanup: {e}")
+
+        # Sync client cleanup
+        if self.client and hasattr(self.client, "close"):
+            try:
+                self.client.close()
+            except: pass
+
+        # Allow time for underlying aiohttp connector to close
+        import asyncio
+        await asyncio.sleep(0.250)
