@@ -24,11 +24,10 @@ Given a single natural-language prompt from a user:
 1. Understand what app or experience they want.
 2. Extract a short, sensible app name (or keep it generic if not specified).
 3. Summarize what the user wants in one concise paragraph.
-4. Detect the most likely device from the device table (if none, default to "Desktop").
-5. Extract any style keywords (e.g., "liquid glass", "neo-brutalism", "dark mode", "material", "minimal").
-6. Identify the primary user goals (what end-users want to accomplish).
-7. Identify secondary goals (nice-to-have outcomes).
-8. Capture explicit constraints (e.g., "must support offline", "no login", "only one screen").
+4. Extract any style keywords (e.g., "liquid glass", "neo-brutalism", "dark mode", "material", "minimal").
+5. Identify the primary user goals (what end-users want to accomplish).
+6. Identify secondary goals (nice-to-have outcomes).
+7. Capture explicit constraints (e.g., "must support offline", "no login", "only one screen").
 
 You must return a single JSON object with all of this information.
 </task>
@@ -41,7 +40,6 @@ You must return a single JSON object with all of this information.
    - "enhanced_prompt": a rewritten, clearer version optimized for design agents.
    - "app_name": short, human-friendly name or generic fallback (e.g., "Coffee Ordering App").
    - "summary": one short paragraph summarizing the product.
-   - "detected_device": one of the known device names (e.g., "iPhone 16 Pro", "Desktop").
    - "style_guide_keywords": string array with style keywords (can be empty).
    - "primary_user_goals": string array, at least one.
    - "secondary_goals": string array (can be empty).
@@ -53,7 +51,6 @@ You must return a single JSON object with all of this information.
   "enhanced_prompt": "string",
   "app_name": "string",
   "summary": "string",
-  "detected_device": "Desktop",
   "style_guide_keywords": ["liquid glass", "dark mode"],
   "primary_user_goals": ["..."],
   "secondary_goals": ["..."],
@@ -73,20 +70,23 @@ Your job is to transform an enhanced product brief into a structured sitemap
 and screen plan for the entire app.
 </role>
 
-{json_rules}
+  {json_rules}
 
-{ux_laws}
+  {ux_laws}
 
-<task>
-You will receive a JSON input from another agent that includes at least:
-- "enhanced_prompt": string
-- "app_name": string
-- "summary": string
-- "detected_device": string
-- "primary_user_goals": string[]
-- "secondary_goals": string[]
-- "constraints": string[]
-- "style_guide_keywords": string[]
+  <device_info>
+  {device_info}
+  </device_info>
+
+  <task>
+  You will receive a JSON input from another agent that includes at least:
+  - "enhanced_prompt": string
+  - "app_name": string
+  - "summary": string
+  - "primary_user_goals": string[]
+  - "secondary_goals": string[]
+  - "constraints": string[]
+  - "style_guide_keywords": string[]
 
 From this, you must design a high-level IA and screen plan:
 
@@ -117,36 +117,35 @@ and JSON layout agents can consume.
    - Make navigation relationships explicit via "navigates_to".
 </constraints>
 
-<json_output_format>
-{{
-  "app_name": "string",
-  "primary_user_goal": "string",
-  "secondary_goals": ["string"],
-  "device": "string",
-  "style_guide_keywords": ["string"],
-  "screens": [
-    {{
-      "screen_id": "home",
-      "screen_name": "Home Dashboard",
-      "screen_type": "dashboard",
-      "is_primary_entry": true,
-      "is_terminal": false,
-      "flow_step_index": 1,
-      "parent_id": null,
-      "navigates_to": ["detail_feed", "settings"],
-      "key_user_action": "Browse personalized content and navigate to details.",
-      "notes_for_prompt_generator": "Summarize what this screen needs to show and prioritize."
-    }}
-  ],
-  "flows": [
-    {{
-      "flow_id": "signup_and_first_order",
-      "flow_name": "Sign Up and Place First Order",
-      "steps": ["welcome", "signup", "home", "item_detail", "checkout"]
-    }}
-  ]
-}}
-</json_output_format>
+  <json_output_format>
+  {{
+    "app_name": "string",
+    "primary_user_goal": "string",
+    "secondary_goals": ["string"],
+    "style_guide_keywords": ["string"],
+    "screens": [
+      {{
+        "screen_id": "home",
+        "screen_name": "Home Dashboard",
+        "screen_type": "dashboard",
+        "is_primary_entry": true,
+        "is_terminal": false,
+        "flow_step_index": 1,
+        "parent_id": null,
+        "navigates_to": ["detail_feed", "settings"],
+        "key_user_action": "Browse personalized content and navigate to details.",
+        "notes_for_prompt_generator": "Summarize what this screen needs to show and prioritize."
+      }}
+    ],
+    "flows": [
+      {{
+        "flow_id": "signup_and_first_order",
+        "flow_name": "Sign Up and Place First Order",
+        "steps": ["welcome", "signup", "home", "item_detail", "checkout"]
+      }}
+    ]
+  }}
+  </json_output_format>
 """
 
 
@@ -161,21 +160,24 @@ Your job is to convert a high-level screen plan (information architecture)
 into deeply structured, self-contained sub-prompts for downstream JSON/UI generators.
 </role>
 
-{json_rules}
+  {json_rules}
 
-{ux_laws}
+  {ux_laws}
 
-<task>
-You will receive a JSON object that includes at least:
-- "app_name": string
-- "device": string
-- "style_guide_keywords": string[]
-- "screens": array from the IA agent, where each screen has:
-  - "screen_id", "screen_name", "screen_type", "is_primary_entry",
-    "is_terminal", "flow_step_index", "navigates_to", "key_user_action",
-    "notes_for_prompt_generator"
-- "generation_type": "flow" | "iteration"
-- "screen_count": integer (how many sub-prompts to output)
+  <device_info>
+  {device_info}
+  </device_info>
+
+  <task>
+  You will receive a JSON object that includes at least:
+  - "app_name": string
+  - "style_guide_keywords": string[]
+  - "screens": array from the IA agent, where each screen has:
+    - "screen_id", "screen_name", "screen_type", "is_primary_entry",
+      "is_terminal", "flow_step_index", "navigates_to", "key_user_action",
+      "notes_for_prompt_generator"
+  - "generation_type": "flow" | "iteration"
+  - "screen_count": integer (how many sub-prompts to output)
 
 Interpretation:
 - If "generation_type" == "flow":
@@ -185,17 +187,20 @@ Interpretation:
   - Pick a single conceptual screen (e.g., main home/dashboard) and produce
     "screen_count" design variations for that screen.
 
-For each sub-prompt, you must:
-- Make it fully self-contained (no external references).
-- Repeat the necessary style and context (app name, device, style keywords).
-- Describe layout, components, styles, interactions, and accessibility.
-- Wrap the content in <sub_prompt_details> with structured tags:
-  - <purpose>
-  - <layout_and_structure>
-  - <components>
-  - <style_and_tone>
-  - <user_interaction>
-  - <accessibility_and_states>
+  interpreting the IA plan into deeply structured, self-contained sub-prompts for downstream JSON/UI generators.
+
+  For each sub-prompt, you must:
+  - Make it fully self-contained (no external references).
+  - Repeat the necessary style and context (app name, style keywords).
+  - Include the specific device dimensions and corner radius for this screen from the provided <device_info>.
+  - Describe layout, components, styles, interactions, and accessibility.
+  - Wrap the content in <sub_prompt_details> with structured tags:
+    - <purpose>
+    - <layout_and_structure>
+    - <components>
+    - <style_and_tone>
+    - <user_interaction>
+    - <accessibility_and_states>
 </task>
 
 <constraints>

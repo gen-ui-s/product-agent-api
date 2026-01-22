@@ -1,6 +1,6 @@
 import json
 from models.db_models import Job
-from exceptions import PromptGenerationFailedException
+from exceptions import PromptGenerationFailedException, DeviceSizeNotFoundException
 from llm.providers.factory import LLMFactory
 from workflows.prompts.prompt_gen import PROMPT_ENHANCER, INFORMATION_ARCHITECTURE, SCREEN_SUB_PROMPT_GENERATOR_AGENT
 from workflows.prompts.general import JSON_RULES_SNIPPET, UX_LAWS_SNIPPET
@@ -22,26 +22,22 @@ class PromptGenerator:
                 screen_count = self.job_data["screen_count"]
                 generation_type = self.job_data["generation_type"]
                 # Detect device size or default
-                logger.info(self.job_data.get('device', {"name": "Desktop"}))
-                device = self.job_data.get("device", {"name": "Desktop"})
+                device = self.job_data.get("device")
+                if not device or "name" not in device:
+                    raise DeviceSizeNotFoundException("Device information is missing from job data.")
+                
                 device_name = device["name"]
-                logger.info(device_name)
                 try:
                     device_enum = AvailableDeviceSizes.get_device_by_name(device_name)
-                    # Dump device info as JSON
-                    device_info = json.dumps({
+                    # Store device info as dict
+                    device_info = {
                         "name": device_enum.name,
                         "width": device_enum.width,
                         "height": device_enum.height,
                         "corner_radius": device_enum.corner_radius
-                    }, indent=2)
+                    }
                 except ValueError:
-                     device_info = json.dumps({
-                        "name": "Desktop",
-                        "width": 1440,
-                        "height": 1024,
-                        "corner_radius": 0
-                     }, indent=2)
+                     raise DeviceSizeNotFoundException("Device size not found for device: " + device_name)
     
                 # ------------------------------------------------------------------
                 # STEP 1: PROMPT ENHANCER
@@ -50,7 +46,7 @@ class PromptGenerator:
                 enhancer_system = PROMPT_ENHANCER.format(
                     json_rules=JSON_RULES_SNIPPET,
                     ux_laws=UX_LAWS_SNIPPET,
-                    device_info=str(device_info)
+                    device_info=json.dumps(device_info, indent=2)
                 )
                 
                 msgs_1 = [
@@ -67,7 +63,8 @@ class PromptGenerator:
                 logger.info("Step 2: Designing Information Architecture...")
                 ia_system = INFORMATION_ARCHITECTURE.format(
                     json_rules=JSON_RULES_SNIPPET,
-                    ux_laws=UX_LAWS_SNIPPET
+                    ux_laws=UX_LAWS_SNIPPET,
+                    device_info=json.dumps(device_info, indent=2)
                 )
                 # Pass the enhanced brief as input
                 msgs_2 = [
@@ -84,7 +81,8 @@ class PromptGenerator:
                 logger.info("Step 3: Generating Screen Sub-Prompts...")
                 sub_gen_system = SCREEN_SUB_PROMPT_GENERATOR_AGENT.format(
                     json_rules=JSON_RULES_SNIPPET,
-                    ux_laws=UX_LAWS_SNIPPET
+                    ux_laws=UX_LAWS_SNIPPET,
+                    device_info=json.dumps(device_info, indent=2)
                 )
                 
                 # Prepare input for sub-prompter
@@ -107,6 +105,7 @@ class PromptGenerator:
                     "optimized_prompt": str(brief_json),
                     "information_architecture": str(sitemap_json),
                     "sub_prompts": final_prompts_json,
+                    "device_info": device_info
                 }
             finally:
                 if hasattr(provider, "close"):

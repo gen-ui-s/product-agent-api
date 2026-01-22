@@ -3,7 +3,7 @@ import json
 import xml.etree.ElementTree as ET
 
 from typing import List, Optional, Dict
-from exceptions import LLMProviderCompletionFailedException
+from exceptions import LLMProviderCompletionFailedException, DeviceSizeNotFoundException
 from models.request_models import Component
 from llm.providers.factory import LLMProvider
 from workflows.prompts.component_gen import JSON_UI_GENERATOR_SYSTEM_PROMPT
@@ -36,25 +36,20 @@ class AsyncComponentGenerator:
     async def generate_component_code(
         self, 
         provider: LLMProvider, 
-        device_name: str = "Desktop",
+        device_info: dict,
         ia_context: Optional[Dict] = None
     ) -> Component:
         
-        # 1. Resolve Device Size
-        try:
-            device_enum = AvailableDeviceSizes.get_device_by_name(device_name)
-            device_size = device_enum  # This is the DeviceSize object
-        except ValueError:
-            # Fallback if unknown
-            device_size = DeviceSize(width=1440, height=1024, corner_radius=0, name="Desktop")
-            logger.warning(f"Device '{device_name}' not found, defaulting to Desktop.")
+        # 1. Validate Device Size
+        if not device_info:
+            raise DeviceSizeNotFoundException("device_info is required for component generation.")
 
-        # 2. Format Device Specs (JSON)
+        # 2. Format Device Specs (JSON) for prompt context
         device_specs_str = json.dumps({
-            "target_device": device_size.name,
-            "width": device_size.width,
-            "height": device_size.height,
-            "corner_radius": device_size.corner_radius
+            "target_device": device_info.get("name", "Unknown"),
+            "width": device_info.get("width"),
+            "height": device_info.get("height"),
+            "corner_radius": device_info.get("corner_radius")
         }, indent=2)
 
         # 3. Format System Prompt with Snippets and Device Info

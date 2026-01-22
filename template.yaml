@@ -94,6 +94,9 @@ Resources:
           DB_PASSWORD: !Ref DBPassword
           DATABASE_URI: !Ref DatabaseUri
           AWS_S3_BUCKET: !Ref AWSS3Bucket
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref AWSS3Bucket
       Layers:
         - !Ref DependenciesLayer
       Events:

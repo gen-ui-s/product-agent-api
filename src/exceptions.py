@@ -1,3 +1,6 @@
+class DeviceSizeNotFoundException(Exception):
+    """DeviceSizeNotFoundException is raised when a device size is not found."""
+
 class DatabaseConnectionError(Exception):
     """Exception raised for errors in the database connection."""
 

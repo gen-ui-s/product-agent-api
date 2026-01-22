@@ -40,13 +40,13 @@ def generate_component_prompts(job_data: Job) -> List[str]:
     return component_prompts
 
 
-async def _generate_single_component(job_data: Job, prompt: str, provider: LLMProvider, component_id: str) -> Component:
+async def _generate_single_component(job_data: Job, prompt: str, provider: LLMProvider, component_id: str, device_info: dict) -> Component:
     try:
         component_generator = AsyncComponentGenerator(
             model_name=job_data["model"],
             user_prompt=prompt
         )
-        component = await component_generator.generate_component_code(provider)
+        component = await component_generator.generate_component_code(provider, device_info=device_info)
         # OVERRIDE the dummy UUID with the actual DB component ID
         component.id = component_id 
         logger.info(f"Successful component: {component_id}")
@@ -62,7 +62,7 @@ async def _generate_single_component(job_data: Job, prompt: str, provider: LLMPr
         raise ComponentGenerationFailedException(message=str(e), invalid_code=None, sub_prompt=prompt)
     
 
-async def generate_components_concurrently(job_data: Job, component_prompts: List[str], job_components: List[dict]) -> List:
+async def generate_components_concurrently(job_data: Job, component_prompts: List[str], job_components: List[dict], component_prompts_info: dict) -> List:
     logger.info(f"Starting concurrent generation for {len(component_prompts)} prompts for job {job_data['_id']}. ")
 
     provider = LLMFactory.create_async_provider(job_data["model"])
@@ -72,7 +72,7 @@ async def generate_components_concurrently(job_data: Job, component_prompts: Lis
          logger.warning(f"Length mismatch: {len(component_prompts)} prompts vs {len(job_components)} DB components. This might cause ID misalignment.")
 
     tasks = [
-        _generate_single_component(job_data, prompt['sub_prompt'], provider, db_comp['_id'])
+        _generate_single_component(job_data, prompt['sub_prompt'], provider, db_comp['_id'], component_prompts_info)
         for prompt, db_comp in zip(component_prompts, job_components)
     ]
 
@@ -210,8 +210,8 @@ async def _process_and_upload_images(results: List):
             logger.error(f"Failed to patch component {result._id} with images: {e}")
 
 
-async def _orchestrate_generation(job_data, prompts, job_components):
-    results = await generate_components_concurrently(job_data, prompts, job_components)
+async def _orchestrate_generation(job_data, prompts, job_components, device_info):
+    results = await generate_components_concurrently(job_data, prompts, job_components, device_info)
     await _process_and_upload_images(results)
     return results
 
@@ -231,7 +231,7 @@ def run(job_id: str):
         for db_component, prompt_data in zip(job_components, components_prompts["sub_prompts"]["screens"]):
             update_component_planning(db, db_component["_id"], ComponentStatus.RUNNING, prompt_data["sub_prompt"])
 
-        generation_results: dict = asyncio.run(_orchestrate_generation(job_data, components_prompts["sub_prompts"]["screens"], job_components))
+        generation_results: dict = asyncio.run(_orchestrate_generation(job_data, components_prompts["sub_prompts"]["screens"], job_components, components_prompts["device_info"]))
 
         current_time = datetime.now().isoformat()
         successful_component_count = save_generation_results_to_db(db, job_components, generation_results, current_time)
